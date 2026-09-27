@@ -22,7 +22,8 @@
   },
   "dependencies": {
     "hono": "^4.13.9",
-    "rrule-temporal": "^2.2.7"
+    "rrule-temporal": "^2.2.7",
+    "temporal-polyfill": "^1.0.5"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.14",
