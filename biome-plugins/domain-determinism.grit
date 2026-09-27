@@ -1,14 +1,25 @@
 // src/domain must be deterministic: time and randomness come in through the
-// Clock and IdGenerator ports, never from ambient globals.
+// Clock and IdGenerator ports, never from ambient globals. Each entry also
+// matches its `globalThis.`-qualified form.
 language js
 
 or {
   `Date.now`,
   `new Date()`,
+  `Date()`,
+  `Temporal.Now`,
   `Math.random`,
   `performance.now`,
   `crypto.randomUUID`,
-  `crypto.getRandomValues`
+  `crypto.getRandomValues`,
+  `globalThis.Date.now`,
+  `new globalThis.Date()`,
+  `globalThis.Date()`,
+  `globalThis.Temporal.Now`,
+  `globalThis.Math.random`,
+  `globalThis.performance.now`,
+  `globalThis.crypto.randomUUID`,
+  `globalThis.crypto.getRandomValues`
 } as $banned where {
   register_diagnostic(span=$banned, message="Non-deterministic global in src/domain. Inject a Clock or IdGenerator port instead.", severity="error")
 }
