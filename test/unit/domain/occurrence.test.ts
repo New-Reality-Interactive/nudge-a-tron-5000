@@ -193,6 +193,31 @@ describe("transition: ACK", () => {
   });
 });
 
+describe("transition: CANCEL", () => {
+  it("closes an open occurrence as CANCELLED", () => {
+    const now = T0.add({ minutes: 5 });
+    const t = step(step(schedule(), nag(), T0).occurrence, { kind: "CANCEL" }, now);
+    expect(t.occurrence).toMatchObject({
+      state: "CANCELLED",
+      closedAt: now,
+      nextNagAt: null,
+      closeReason: null,
+    });
+    expect(t.events).toEqual([{ occurrenceId: "occ-1", type: "CANCELLED", at: now, data: {} }]);
+  });
+
+  it("is an idempotent no-op on a closed occurrence", () => {
+    const acked = step(schedule(), { kind: "ACK" }, T0).occurrence;
+    expect(step(acked, { kind: "CANCEL" }, T0)).toEqual({
+      occurrence: acked,
+      events: [],
+      nextNagAt: null,
+    });
+    const cancelled = step(schedule(), { kind: "CANCEL" }, T0).occurrence;
+    expect(step(cancelled, { kind: "ACK" }, T0).occurrence).toBe(cancelled);
+  });
+});
+
 describe("transition: SUPERSEDE", () => {
   it("closes an open occurrence as MISSED(superseded)", () => {
     const t = step(schedule(), { kind: "SUPERSEDE", by: "occ-2" }, T0);
@@ -249,8 +274,8 @@ describe("transition: properties", () => {
     );
   });
 
-  it("random inputs never throw, closed stays closed, and ack on closed is a no-op", () => {
-    const inputArb = fc.constantFrom("nag", "early", "ack", "supersede");
+  it("random inputs never throw, closed stays closed, and ack or cancel on closed is a no-op", () => {
+    const inputArb = fc.constantFrom("nag", "early", "ack", "cancel", "supersede");
     fc.assert(
       fc.property(
         policyArb,
@@ -265,15 +290,17 @@ describe("transition: properties", () => {
             const input: TransitionInput =
               kind === "ack"
                 ? { kind: "ACK" }
-                : kind === "supersede"
-                  ? { kind: "SUPERSEDE", by: "next" }
-                  : nag(p);
+                : kind === "cancel"
+                  ? { kind: "CANCEL" }
+                  : kind === "supersede"
+                    ? { kind: "SUPERSEDE", by: "next" }
+                    : nag(p);
             if (kind === "nag" && occ.nextNagAt !== null) now = occ.nextNagAt;
             const at = kind === "early" ? now.subtract({ seconds: 1 }) : now;
             const result = transition(occ, input, at);
 
             if (wasClosed) {
-              if (kind === "ack") {
+              if (kind === "ack" || kind === "cancel") {
                 expect(result).toEqual({
                   ok: true,
                   value: { occurrence: occ, events: [], nextNagAt: null },

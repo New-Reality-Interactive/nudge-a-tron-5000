@@ -30,3 +30,25 @@ export function nextOccurrence(
   const rule = new RRuleTemporal({ temporal: Temporal, rruleString: rrule, dtstart: start });
   return rule.next(after.toZonedDateTimeISO(tz))?.toInstant() ?? null;
 }
+
+/**
+ * The latest occurrence at or before `atOrBefore`, or null when there is none. Used to
+ * catch up after the object slept through several slots: only the latest one fires.
+ * Same wall-clock and DST semantics as `nextOccurrence`.
+ */
+export function latestOccurrence(
+  rrule: string | null,
+  dtstart: Temporal.PlainDateTime,
+  tz: string,
+  atOrBefore: Temporal.Instant,
+): Temporal.Instant | null {
+  const start = dtstart.toZonedDateTime(tz, { disambiguation: "compatible" });
+
+  if (rrule === null) {
+    const only = start.toInstant();
+    return Temporal.Instant.compare(only, atOrBefore) <= 0 ? only : null;
+  }
+
+  const rule = new RRuleTemporal({ temporal: Temporal, rruleString: rrule, dtstart: start });
+  return rule.previous(atOrBefore.toZonedDateTimeISO(tz), true)?.toInstant() ?? null;
+}

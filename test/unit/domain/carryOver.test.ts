@@ -26,6 +26,11 @@ describe("startLevel: examples", () => {
     expect(startLevel(acked, "firm")).toBe(0);
   });
 
+  it("resets to 0 after a cancel", () => {
+    const cancelled = occurrence({ state: "CANCELLED", level: 3, nextNagAt: null, closedAt: T0 });
+    expect(startLevel(cancelled, "firm")).toBe(0);
+  });
+
   const missed = (closeReason: "superseded" | "cap", level: number, attempts: number) =>
     occurrence({ state: "MISSED", level, attempts, nextNagAt: null, closedAt: T0, closeReason });
 

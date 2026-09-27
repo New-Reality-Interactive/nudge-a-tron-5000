@@ -38,7 +38,7 @@ export interface Reminder {
   status: ReminderStatus;
 }
 
-export type OccurrenceState = "PENDING" | "NAGGING" | "ACKED" | "MISSED";
+export type OccurrenceState = "PENDING" | "NAGGING" | "ACKED" | "MISSED" | "CANCELLED";
 export type CloseReason = "cap" | "superseded";
 
 interface OccurrenceBase {
@@ -72,18 +72,30 @@ export interface MissedOccurrence extends OccurrenceBase {
   closeReason: CloseReason;
 }
 
-export type ClosedOccurrence = AckedOccurrence | MissedOccurrence;
+/** Closed because its reminder was deleted. See ADR 0006. */
+export interface CancelledOccurrence extends OccurrenceBase {
+  state: "CANCELLED";
+  nextNagAt: null;
+  closedAt: Temporal.Instant;
+  closeReason: null;
+}
+
+export type ClosedOccurrence = AckedOccurrence | MissedOccurrence | CancelledOccurrence;
 export type Occurrence = OpenOccurrence | ClosedOccurrence;
 
 interface EventDataByType {
   SCHEDULED: { level: number };
   NAG_SENT: { attempt: number; level: number; priority: Priority };
-  /** Recorded by the delivery layer (M3/M5), never by the domain. */
-  SEND_FAILED: { attempt: number };
+  /**
+   * Recorded by the delivery layer, never by the domain. `tries` counts failed
+   * deliveries of this nag; `nextTryAt` is null once the outbox gives up on it.
+   */
+  SEND_FAILED: { attempt: number; tries: number; nextTryAt: Temporal.Instant | null };
   DEFERRED_QUIET: { until: Temporal.Instant };
   ACKED: Record<string, never>;
   MISSED: { reason: "cap" };
   SUPERSEDED: { by: string };
+  CANCELLED: Record<string, never>;
 }
 
 export type EventType = keyof EventDataByType;
