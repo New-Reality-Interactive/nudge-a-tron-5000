@@ -1,5 +1,15 @@
 import { cloudflareTest } from "@cloudflare/vitest-pool-workers";
-import { defineConfig } from "vitest/config";
+import { defineConfig, type Plugin } from "vitest/config";
+
+/** Loads `.sql` as a string in Node, as Wrangler's default Text module rule does in workerd. */
+const sqlAsText: Plugin = {
+  name: "sql-as-text",
+  transform(code, id) {
+    return id.endsWith(".sql")
+      ? { code: `export default ${JSON.stringify(code)};`, map: null }
+      : null;
+  },
+};
 
 export default defineConfig({
   test: {
@@ -21,6 +31,7 @@ export default defineConfig({
     },
     projects: [
       {
+        plugins: [sqlAsText],
         test: {
           name: "unit",
           environment: "node",
