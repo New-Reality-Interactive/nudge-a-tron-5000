@@ -8,6 +8,26 @@ on:
   push:
     branches: [main]
     tags: ["v*"]
+    # Skip staging deploys when a push to main only touches files that cannot
+    # affect the Worker bundle or the database. This is an ignore list on
+    # purpose: anything not listed (including new files) deploys. Path filters
+    # are not evaluated for tag pushes, so v* tags always deploy.
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "test/**"
+      - "requests/**"
+      - ".vscode/**"
+      - ".github/dependabot.yml"
+      - ".github/pull_request_template.md"
+      - "**/biome.json"
+      - "biome-plugins/**"
+      - "vitest.config.ts"
+      - ".editorconfig"
+      - ".gitignore"
+      - ".dev.vars.example"
+  # Manual redeploy: run on main for staging, or on a v* tag for production.
+  workflow_dispatch:
 
 concurrency:
   group: deploy-${{ github.ref }}
