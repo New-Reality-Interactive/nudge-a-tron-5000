@@ -1,7 +1,7 @@
 import fc from "fast-check";
 import { Temporal } from "temporal-polyfill";
 import { describe, expect, it } from "vitest";
-import { nextOccurrence } from "../../../src/domain/recurrence";
+import { latestOccurrence, nextOccurrence } from "../../../src/domain/recurrence";
 import { PROPERTY_RUNS, timeZoneArb, zonedNearDstArb } from "../../support/arbitraries";
 
 const NY = "America/New_York";
@@ -260,6 +260,56 @@ describe("nextOccurrence: properties", () => {
             const local = x.toZonedDateTimeISO(tz);
             expect([local.month, local.day, local.inLeapYear]).toEqual([2, 29, true]);
           }
+        },
+      ),
+      PROPERTY_RUNS,
+    );
+  });
+});
+
+describe("latestOccurrence", () => {
+  it("returns the latest slot at or before the instant", () => {
+    const dtstart = pdt("2026-03-06T09:00");
+    const at = instant("2026-03-09T15:30Z"); // 11:30 EDT on the 9th
+    expect(latestOccurrence("FREQ=DAILY", dtstart, NY, at)?.toString()).toBe(
+      "2026-03-09T13:00:00Z",
+    );
+  });
+
+  it("includes a slot exactly at the instant", () => {
+    const at = instant("2026-03-09T13:00Z");
+    expect(latestOccurrence("FREQ=DAILY", pdt("2026-03-06T09:00"), NY, at)).toEqual(at);
+  });
+
+  it("returns null before dtstart", () => {
+    const at = instant("2026-03-01T00:00Z");
+    expect(latestOccurrence("FREQ=DAILY", pdt("2026-03-06T09:00"), NY, at)).toBeNull();
+  });
+
+  it("handles a one-shot reminder", () => {
+    const dtstart = pdt("2026-03-06T09:00");
+    const only = instant("2026-03-06T14:00Z");
+    expect(latestOccurrence(null, dtstart, NY, only)).toEqual(only);
+    expect(latestOccurrence(null, dtstart, NY, only.subtract({ seconds: 1 }))).toBeNull();
+  });
+
+  it("is at or before the instant, and the next occurrence after it is past the instant", () => {
+    fc.assert(
+      fc.property(
+        zonedNearDstArb.chain(({ tz, at }) =>
+          fc.record({
+            tz: fc.constant(tz),
+            at: fc.constant(at),
+            dtstart: dtstartBefore(at, tz),
+            rrule: fc.constantFrom(...RULES),
+          }),
+        ),
+        ({ tz, at, dtstart, rrule }) => {
+          const latest = latestOccurrence(rrule, dtstart, tz, at);
+          fc.pre(latest !== null);
+          expect(Temporal.Instant.compare(latest, at)).toBeLessThanOrEqual(0);
+          const next = nextOccurrence(rrule, dtstart, tz, latest);
+          if (next !== null) expect(Temporal.Instant.compare(next, at)).toBe(1);
         },
       ),
       PROPERTY_RUNS,

@@ -1,6 +1,6 @@
 # Milestone 3: UserNudger Durable Object
 
-**Status:** Not started
+**Status:** Done
 **Depends on:** Milestone 2
 **Branch:** `feat/user-nudger-do`
 
@@ -53,14 +53,22 @@ These are integration tests (`test/integration/…`) running in workerd:
 
 ## Acceptance criteria
 
-- [ ] The schema, the DO migration mechanism and the repository are in place. The migration design is documented (as an ADR if significant)
-- [ ] The alarm step is idempotent, and the replay test proves it
-- [ ] Outbox retry uses backoff and records `SEND_FAILED`
-- [ ] The integration scenarios above pass. `npm run coverage` passes
-- [ ] The `UserNudger` RPC surface is ready for M4 and M5 to use
-- [ ] This spec's Status is set to Done and `docs/milestones/README.md` is updated
+- [x] The schema, the DO migration mechanism and the repository are in place. The migration design is documented (as an ADR if significant)
+- [x] The alarm step is idempotent, and the replay test proves it
+- [x] Outbox retry uses backoff and records `SEND_FAILED`
+- [x] The integration scenarios above pass. `npm run coverage` passes
+- [x] The `UserNudger` RPC surface is ready for M4 and M5 to use
+- [x] This spec's Status is set to Done and `docs/milestones/README.md` is updated
 
 ## Open questions (answer them in the plan)
+
+Answered in [ADR 0006](../adr/0006-user-nudger-storage-migrations-delivery.md):
+- **Time:** tests swap the DO's `deps` (clock, ids, notifier) through `runInDurableObject`. There is no test hook in production.
+- **Backoff:** 30 s doubling, capped at 5 min. After 5 failed tries the row is `DEAD`, and each failure records `SEND_FAILED`.
+- **Recurrence:** lazily, one occurrence when it's due. After a gap, only the latest due slot is created.
+- **Delete:** a soft delete. The open occurrence closes as a new `CANCELLED` state.
+
+The original questions:
 
 - How do tests control the time? What is the test-only way to set it, and how is it kept out of production builds?
 - What are the outbox backoff schedule and the maximum number of tries? What happens after the last try: record a `SEND_FAILED` event and mark the row dead?

@@ -25,6 +25,7 @@ export interface NagPolicy {
 export type TransitionInput =
   | { kind: "NAG_DUE"; policy: NagPolicy }
   | { kind: "ACK" }
+  | { kind: "CANCEL" }
   | { kind: "SUPERSEDE"; by: string };
 
 export interface Transition {
@@ -90,27 +91,22 @@ export function scheduleOccurrence(params: {
 }
 
 /**
- * PENDING → NAGGING → ACKED | MISSED(cap | superseded). Invalid transitions are errors,
- * except ACK on a closed occurrence, which is an idempotent no-op.
+ * PENDING → NAGGING → ACKED | MISSED(cap | superseded) | CANCELLED. Invalid transitions
+ * are errors, except ACK or CANCEL on a closed occurrence, which are idempotent no-ops.
  */
 export function transition(
   occurrence: Occurrence,
   input: TransitionInput,
   now: Temporal.Instant,
 ): TransitionResult {
-  if (input.kind === "ACK") {
+  if (input.kind === "ACK" || input.kind === "CANCEL") {
     if (occurrence.nextNagAt === null) {
       return ok({ occurrence, events: [], nextNagAt: null });
     }
+    const state = input.kind === "ACK" ? "ACKED" : "CANCELLED";
     return ok({
-      occurrence: {
-        ...occurrence,
-        state: "ACKED",
-        nextNagAt: null,
-        closedAt: now,
-        closeReason: null,
-      },
-      events: [{ occurrenceId: occurrence.id, type: "ACKED", at: now, data: {} }],
+      occurrence: { ...occurrence, state, nextNagAt: null, closedAt: now, closeReason: null },
+      events: [{ occurrenceId: occurrence.id, type: state, at: now, data: {} }],
       nextNagAt: null,
     });
   }

@@ -54,7 +54,8 @@ are in `docs/milestones/`. Update a milestone's Status and checklist in the PR t
 ## Migrations and deploys
 - D1: `migrations/d1/*.sql`, applied by `deploy.yml` (`wrangler d1 migrations apply --remote`)
   before `wrangler deploy`. Migrations must be forward-only and safe to run on a live database.
-- DO SQLite: `migrations/do/`, applied inside `UserNudger` (mechanism defined in Milestone 3).
+- DO SQLite: `migrations/do/NNNN_name.sql`, listed in `src/durable/migrations.ts` and applied by
+  `UserNudger` on startup (ADR 0006). Forward-only; never edit a merged one.
 - Merging to `main` runs CI, then deploys to staging, unless every changed file is in
   `paths-ignore` in `deploy.yml` (docs, tests, editor/lint config). A `v*` tag on a commit
   already on `main` runs CI, then deploys to production. Anything that can change the bundle
