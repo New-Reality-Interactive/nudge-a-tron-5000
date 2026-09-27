@@ -35,8 +35,7 @@
         {
           "binding": "DB",
           "database_name": "nudge-a-tron-5000-staging",
-          // TODO: replace with the id from `wrangler d1 create nudge-a-tron-5000-staging`
-          "database_id": "00000000-0000-0000-0000-000000000000",
+          "database_id": "e1ccc536-fe43-493b-ac49-89ba53688d83",
           "migrations_dir": "migrations/d1"
         }
       ]
@@ -51,8 +50,7 @@
         {
           "binding": "DB",
           "database_name": "nudge-a-tron-5000-production",
-          // TODO: replace with the id from `wrangler d1 create nudge-a-tron-5000-production`
-          "database_id": "00000000-0000-0000-0000-000000000000",
+          "database_id": "acb3c942-4484-4fdc-833c-2f3bdc013f29",
           "migrations_dir": "migrations/d1"
         }
       ]
