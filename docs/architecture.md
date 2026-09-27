@@ -23,7 +23,7 @@ Greenfield service for **nagging reminders**: a reminder fires on a (possibly re
 ## Architecture
 
 ```
- HTTP client ──► Worker (Hono, /v1, zod-validated, OpenAPI generated)
+ HTTP client ──► Worker (Hono, /v0, zod-validated, OpenAPI generated)
                    │  auth: API key → D1 lookup (users, api_keys)
                    ▼
            UserNudger Durable Object (one per user, SQLite storage)
@@ -69,13 +69,14 @@ Greenfield service for **nagging reminders**: a reminder fires on a (possibly re
 
 **Determinism seams.** Every use case takes `Clock` and `IdGenerator` ports (UUIDv7 in prod, sequential in tests). Nothing in `domain/` reads `Date.now()` or `Math.random()`. A lint rule enforces this.
 
-## API (v1, OpenAPI 3.1 generated from zod via `@hono/zod-openapi`)
-- `POST/GET /v1/reminders`, `GET/PATCH/DELETE /v1/reminders/{id}`
-- `GET /v1/reminders/{id}/occurrences`, `GET /v1/occurrences/{id}/events`
-- `POST /v1/occurrences/{id}/ack` (for API clients)
-- `GET /v1/me`, `PATCH /v1/me` (timezone, quiet hours)
-- Admin (admin key): `POST /v1/admin/users`, `POST/DELETE /v1/admin/users/{id}/keys`
+## API (v0, OpenAPI 3.1 generated from zod via `@hono/zod-openapi`)
+- `POST/GET /v0/reminders`, `GET/PATCH/DELETE /v0/reminders/{id}`
+- `GET /v0/reminders/{id}/occurrences`, `GET /v0/occurrences/{id}/events`
+- `POST /v0/occurrences/{id}/ack` (for API clients)
+- `GET /v0/me`, `PATCH /v0/me` (timezone, quiet hours)
+- Admin (admin key): `POST /v0/admin/users`, `POST/DELETE /v0/admin/users/{id}/keys`
 - Public ack: `GET /a/{token}` shows a confirm page (safe against link prefetchers). `POST /a/{token}` performs the ack, and the ntfy `http` action button POSTs directly. Both are idempotent.
+- The URI's major version matches the release's major version. Changes within a major version stay backwards compatible, and at most two major versions are served at once ([ADR 0007](adr/0007-versioning-and-compatibility.md)).
 - Errors use RFC 9457 `application/problem+json`. Mutating POSTs accept an `Idempotency-Key` header.
 
 ## Security

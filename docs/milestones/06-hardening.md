@@ -11,7 +11,7 @@ Make the MVP safe to leave running for family and friends: abuse limits, logs yo
 ## Scope
 
 1. **Rate limiting:**
-   - Per API key on `/v1/*`, using the Workers **Rate Limiting** binding. The binding is added to `wrangler.jsonc` for all environments.
+   - Per API key on `/v0/*`, using the Workers **Rate Limiting** binding. The binding is added to `wrangler.jsonc` for all environments.
    - Per IP on the public `/a/{token}` routes.
    - Over-limit requests get `429` as problem+json, with `Retry-After`.
 2. **Validation limits review:** go over every input limit from M4 and M5 and check it against abuse cases:

@@ -27,7 +27,7 @@ Make the Durable Object that runs each user's reminders reliable. It stores remi
 8. **`Notifier` port** in `src/app`, plus a fake adapter for tests that records every send. The real ntfy adapter comes in M5.
    - **Production `Clock` and `IdGenerator`** for the `src/app/ports.ts` ports from M2: a system clock, and a UUIDv7 generator (RFC 9562, on `crypto.getRandomValues`) that takes its timestamp from an injected `Clock`. M2 has only the ports and the test fakes (`test/support/fakes.ts`).
    - Creating the next occurrence calls M2's `startLevel` with the reminder's most recent closed occurrence (see ADR 0005).
-9. **User settings in the DO:** timezone and quiet hours, needed for M2's quiet-hours rule. They're set through an RPC method for now; M4 adds `PATCH /v1/me` on top of it.
+9. **User settings in the DO:** timezone and quiet hours, needed for M2's quiet-hours rule. They're set through an RPC method for now; M4 adds `PATCH /v0/me` on top of it.
 
 ## Out of scope
 

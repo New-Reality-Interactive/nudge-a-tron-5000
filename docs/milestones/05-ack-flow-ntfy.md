@@ -26,7 +26,7 @@ Send real notifications and let people stop them. Nags go to the user's phone th
    - The priority comes from the escalation level (M2).
    - Each notification has an `http` action button that POSTs to `/a/{token}`, plus a `view` action that opens the confirmation page as a fallback.
    - **Titles only by default** ([ADR 0002](../adr/0002-ntfy-first-behind-notifier-port.md)). The body is never sent unless a reminder explicitly allows it.
-4. **ntfy topics:** each user gets a random 128-bit topic, created along with the user. It's shown to that user only through `GET /v1/me`, never logged, and never returned on any other route.
+4. **ntfy topics:** each user gets a random 128-bit topic, created along with the user. It's shown to that user only through `GET /v0/me`, never logged, and never returned on any other route.
 5. **Wiring:** in production, the DO builds its notifier from `NtfyNotifier`. The base URL comes from config, so it can point at a self-hosted ntfy later.
 
 ## Out of scope
@@ -54,7 +54,7 @@ Send real notifications and let people stop them. Nags go to the user's phone th
 - [ ] Ack tokens follow ADR 0003, including `kid` rotation and constant-time verification
 - [ ] `GET` confirms and `POST` acknowledges. Both are idempotent, and an ack can't be triggered by prefetching the link
 - [ ] The ntfy adapter sends titles only by default, maps levels to priorities, and includes an ack action button
-- [ ] The topic is only exposed through `/v1/me` and is never logged
+- [ ] The topic is only exposed through `/v0/me` and is never logged
 - [ ] The end-to-end test passes. `npm run coverage` passes
 - [ ] This spec's Status is set to Done and `docs/milestones/README.md` is updated
 
