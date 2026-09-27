@@ -1,0 +1,4 @@
+# Copy to .dev.vars for local `wrangler dev`. Never commit .dev.vars.
+# Generate values with: openssl rand -base64 32
+ACK_SIGNING_KEY="replace-me"
+ADMIN_API_KEY="replace-me"

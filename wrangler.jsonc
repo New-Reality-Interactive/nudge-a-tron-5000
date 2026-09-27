@@ -1,0 +1,61 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nudge-a-tron-5000",
+  "main": "src/index.ts",
+  // Capped by the workerd bundled with @cloudflare/vitest-pool-workers so tests
+  // run on the same runtime semantics as prod. Bump when the pool updates.
+  "compatibility_date": "2026-08-22",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+
+  "secrets": { "required": ["ACK_SIGNING_KEY", "ADMIN_API_KEY"] },
+
+  "durable_objects": {
+    "bindings": [{ "name": "USER_NUDGER", "class_name": "UserNudger" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["UserNudger"] }],
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "nudge-a-tron-5000-dev",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations/d1"
+    }
+  ],
+
+  "env": {
+    "staging": {
+      "name": "nudge-a-tron-5000-staging",
+      "secrets": { "required": ["ACK_SIGNING_KEY", "ADMIN_API_KEY"] },
+      "durable_objects": {
+        "bindings": [{ "name": "USER_NUDGER", "class_name": "UserNudger" }]
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "nudge-a-tron-5000-staging",
+          // TODO: replace with the id from `wrangler d1 create nudge-a-tron-5000-staging`
+          "database_id": "00000000-0000-0000-0000-000000000000",
+          "migrations_dir": "migrations/d1"
+        }
+      ]
+    },
+    "production": {
+      "name": "nudge-a-tron-5000-production",
+      "secrets": { "required": ["ACK_SIGNING_KEY", "ADMIN_API_KEY"] },
+      "durable_objects": {
+        "bindings": [{ "name": "USER_NUDGER", "class_name": "UserNudger" }]
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "nudge-a-tron-5000-production",
+          // TODO: replace with the id from `wrangler d1 create nudge-a-tron-5000-production`
+          "database_id": "00000000-0000-0000-0000-000000000000",
+          "migrations_dir": "migrations/d1"
+        }
+      ]
+    }
+  }
+}
