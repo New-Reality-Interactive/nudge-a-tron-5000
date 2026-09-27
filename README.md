@@ -80,7 +80,7 @@ Code in `src/domain/**` must not read ambient time or randomness. `Date.now`, ar
 
 ## Deployment
 
-`.github/workflows/deploy.yml` deploys to **staging** on every push to `main` and to **production** on `v*` tags. Every deploy first runs the full CI suite, and a production tag must point at a commit that is already on `main`. The workflow stays inert until the `CLOUDFLARE_API_TOKEN` repository secret exists. One-time setup:
+`.github/workflows/deploy.yml` deploys to **staging** on every push to `main` and to **production** on `v*` tags. Every deploy first runs the full CI suite, and a production tag must point at a commit that is already on `main`. Pushes to `main` that only change docs, tests or editor/lint config skip the staging deploy (see `paths-ignore` in the workflow). To redeploy by hand, run the **Deploy** workflow from the Actions tab: on `main` for staging, or on a `v*` tag for production. The workflow stays inert until the `CLOUDFLARE_API_TOKEN` repository secret exists. One-time setup:
 
 1. Create D1 databases and paste their IDs into `wrangler.jsonc`:
    ```sh
