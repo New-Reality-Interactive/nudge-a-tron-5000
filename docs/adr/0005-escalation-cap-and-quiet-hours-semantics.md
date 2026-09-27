@@ -26,7 +26,10 @@
 - Any cap field a reminder leaves unset falls back to the default, so the safety cap always applies.
 - After a nag, `nextNagAt` is `min(now + interval, scheduledFor + maxDuration)`. The occurrence closes as `MISSED(cap)` at the next nag that falls due after a limit has been reached. So the last nag still leaves a full interval for the user to acknowledge it.
 
-**Carry-over applies to any unacked close.** A new occurrence starts at level `min(prev.level + 1, maxLevel)` when the previous occurrence closed without an ack, whether as `MISSED(superseded)` or `MISSED(cap)`. It starts at level 0 after an ack, or when there is no previous occurrence. The architecture only described the supersede case. An occurrence the user let run out without responding is ignored just the same, so the next one should escalate too.
+**Carry-over applies to any unacked close, but only escalates after an ignored nag.**
+- A new occurrence starts at level 0 after an ack, or when there is no previous occurrence.
+- When the previous occurrence closed without an ack, whether as `MISSED(superseded)` or `MISSED(cap)`, and sent at least one nag, the new one starts at `min(prev.level + 1, maxLevel)`. The architecture only described the supersede case. An occurrence the user let run out without responding is ignored just the same, so the next one should escalate too.
+- When the previous occurrence closed without an ack but sent **no** nag, the new one starts at `min(prev.level, maxLevel)`: unchanged. This happens when quiet hours defer an occurrence until it's superseded or reaches the cap deadline. The user had nothing to ignore, so the level shouldn't climb. It shouldn't reset either, because nothing was acknowledged. Without this, an hourly reminder with overnight quiet hours would climb one level per hour through the night and greet the user in the morning at the top priority and shortest interval. (Found in code review.)
 
 **Quiet hours.**
 - The window is half-open, `[start, end)`, in the user's local time.

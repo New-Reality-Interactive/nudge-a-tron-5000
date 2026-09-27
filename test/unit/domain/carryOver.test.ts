@@ -26,23 +26,38 @@ describe("startLevel: examples", () => {
     expect(startLevel(acked, "firm")).toBe(0);
   });
 
-  it.each([
-    ["superseded", "superseded"],
-    ["cap", "cap"],
-  ] as const)("carries over one level after MISSED(%s)", (_, closeReason) => {
-    const missed = occurrence({
-      state: "MISSED",
-      level: 1,
-      nextNagAt: null,
-      closedAt: T0,
-      closeReason,
-    });
-    expect(startLevel(missed, "firm")).toBe(2);
-  });
+  const missed = (closeReason: "superseded" | "cap", level: number, attempts: number) =>
+    occurrence({ state: "MISSED", level, attempts, nextNagAt: null, closedAt: T0, closeReason });
+
+  it.each(["superseded", "cap"] as const)(
+    "carries over one level after MISSED(%s) with nags sent",
+    (reason) => {
+      expect(startLevel(missed(reason, 1, 4), "firm")).toBe(2);
+    },
+  );
+
+  it.each(["superseded", "cap"] as const)(
+    "keeps the level after MISSED(%s) with no nag sent",
+    (reason) => {
+      expect(startLevel(missed(reason, 2, 0), "firm")).toBe(2);
+    },
+  );
 
   it("stops at maxLevel", () => {
-    const missed = occurrence({ state: "MISSED", level: 3, nextNagAt: null, closedAt: T0 });
-    expect(startLevel(missed, "firm")).toBe(maxLevel("firm"));
+    expect(startLevel(missed("superseded", 3, 4), "firm")).toBe(maxLevel("firm"));
+  });
+
+  it("clamps a carried level to the new strength's maxLevel", () => {
+    // gentle's maxLevel is 4, firm's is 3.
+    expect(startLevel(missed("superseded", 4, 0), "firm")).toBe(maxLevel("firm"));
+  });
+
+  it("doesn't climb through a night of occurrences deferred by quiet hours", () => {
+    let previous: Occurrence = missed("superseded", 1, 3);
+    for (let hour = 0; hour < 9; hour++) {
+      previous = missed("superseded", startLevel(previous, "firm"), 0);
+    }
+    expect(previous.level).toBe(2);
   });
 });
 
@@ -75,7 +90,7 @@ function play(level: number, strength: Strength, nags: number, outcome: Outcome)
 }
 
 describe("startLevel: properties", () => {
-  it("across a chain of occurrences, the level never decreases across unacked closes, never exceeds maxLevel, and resets on ack", () => {
+  it("across a chain of occurrences, the level resets on ack, rises by one only after an ignored nag, and never exceeds maxLevel", () => {
     const chainArb = fc.array(
       fc.record({
         nags: fc.nat({ max: 8 }),
@@ -92,9 +107,11 @@ describe("startLevel: properties", () => {
           expect(level).toBeGreaterThanOrEqual(0);
           expect(level).toBeLessThanOrEqual(maxLevel(strength));
           if (previous === null || previous.state === "ACKED") expect(level).toBe(0);
-          else expect(level).toBeGreaterThanOrEqual(previous.level);
+          else if (previous.attempts === 0) expect(level).toBe(previous.level);
+          else expect(level).toBe(Math.min(previous.level + 1, maxLevel(strength)));
 
-          previous = play(level, strength, outcome === "cap" ? Math.max(nags, 1) : nags, outcome);
+          // With outcome "cap" and nags 0, the cap (maxAttempts 0) closes it unsent.
+          previous = play(level, strength, nags, outcome);
           expect(previous.level).toBeLessThanOrEqual(maxLevel(strength));
         }
       }),
