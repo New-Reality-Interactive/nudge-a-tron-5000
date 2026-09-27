@@ -1,6 +1,6 @@
 # Milestone 2: Domain core
 
-**Status:** Not started
+**Status:** Done
 **Depends on:** Milestone 1
 **Branch:** `feat/domain-core`
 
@@ -22,7 +22,7 @@ All of this code lives in `src/domain/`, except the ports, which live in `src/ap
    | firm | 30m | 0.5 | 5m | 3 → 5 |
    | relentless | 10m | 0.5 | 2m | 4 → 5 |
 
-4. **Cap** (`cap.ts`): an occurrence stops when `now − scheduledFor ≥ maxDuration` or `attempts ≥ maxAttempts`, whichever happens first. The system default is 24h / 100 attempts. It applies whenever the reminder doesn't set its own cap.
+4. **Cap** (`cap.ts`): an occurrence stops when `now − scheduledFor ≥ maxDuration` or `attempts ≥ maxAttempts`, whichever happens first. The system default is 24h / 20 attempts (originally 100; see ADR 0005). It applies whenever the reminder doesn't set its own cap.
 5. **Quiet hours** (`quietHours.ts`): a nag due inside the user's local quiet window moves to the end of the window. Windows can cross midnight (for example 22:00–07:00). The logic uses time-zone-aware maths, so it's correct across DST changes.
 6. **Carry-over** (`carryOver.ts`, or part of the state machine): when a new occurrence fires while the previous one is still unacknowledged, the previous one becomes `MISSED(superseded)`. The new one starts at level `min(prev.level + 1, maxLevel)`. Acknowledging resets the next occurrence to level 0.
 7. **Occurrence state machine** (`occurrence.ts`): `PENDING → NAGGING → ACKED | MISSED(cap | superseded)`. Transitions are pure functions of `(state, input, now)`. Each returns the new state, the events to record (`SCHEDULED`, `NAG_SENT`, `DEFERRED_QUIET`, `ACKED`, `MISSED`, `SUPERSEDED`), and `nextNagAt`. An invalid transition is a typed error, not a silent no-op. Acknowledging an already-closed occurrence is idempotent.
@@ -49,14 +49,16 @@ All of this code lives in `src/domain/`, except the ports, which live in `src/ap
 
 ## Acceptance criteria
 
-- [ ] All scope items are implemented with the file layout above, or a layout agreed in the plan
-- [ ] Property and example tests pass. `npm run coverage` passes with no lowered thresholds
-- [ ] `npm run lint` passes with the determinism rule active. `src/domain` never reads the clock or randomness directly
-- [ ] The spike is deleted and ADR 0004 is updated
-- [ ] Nothing in `src/domain` imports from `src/app`, `src/adapters`, `src/durable` or `src/http`
-- [ ] This spec's Status is set to Done and `docs/milestones/README.md` is updated
+- [x] All scope items are implemented with the file layout above, or a layout agreed in the plan
+- [x] Property and example tests pass. `npm run coverage` passes with no lowered thresholds
+- [x] `npm run lint` passes with the determinism rule active. `src/domain` never reads the clock or randomness directly
+- [x] The spike is deleted and ADR 0004 is updated
+- [x] Nothing in `src/domain` imports from `src/app`, `src/adapters`, `src/durable` or `src/http`
+- [x] This spec's Status is set to Done and `docs/milestones/README.md` is updated
 
 ## Open questions (answer them in the plan)
+
+Answered in [ADR 0005](../adr/0005-escalation-cap-and-quiet-hours-semantics.md).
 
 - How are levels numbered: does level 0 mean "first nag"? And how does `priorityAt` map levels to priorities (linear, or a step at a set level)?
 - `maxLevel`: is it the level where the interval first reaches its floor, or a fixed number?

@@ -32,6 +32,7 @@ Put the versioned REST API in front of the `UserNudger` DO: per-user API keys st
    - no `FREQ` finer than a minute
    - a minimum interval between occurrences (e.g. 1 minute)
    - a valid IANA timezone
+   - a `dtstart` local time that exists in its timezone (not inside a DST gap; see ADR 0004)
    - limits on title and body length
 6. **Errors:** everything returns RFC 9457 `application/problem+json`. That covers validation errors (with field details), 401, 403, 404, 409 and 500. Responses never include stack traces or secrets.
 7. **`Idempotency-Key`** on mutating POSTs: the same key with the same body replays the stored response, and the same key with a different body gets a 409. Keys are stored per user in the DO, with an expiry (propose one).

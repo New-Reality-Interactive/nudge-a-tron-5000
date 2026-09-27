@@ -5,7 +5,7 @@ The MVP is delivered in milestones. Each has its own spec here, and each is buil
 | # | Milestone | Status | Spec |
 |---|---|---|---|
 | 1 | Scaffold | ✅ Done (`v0.1.0`) | [01-scaffold.md](01-scaffold.md) |
-| 2 | Domain core | Not started | [02-domain-core.md](02-domain-core.md) |
+| 2 | Domain core | ✅ Done | [02-domain-core.md](02-domain-core.md) |
 | 3 | UserNudger Durable Object | Not started | [03-user-nudger-do.md](03-user-nudger-do.md) |
 | 4 | HTTP API + auth | Not started | [04-http-api-auth.md](04-http-api-auth.md) |
 | 5 | Ack flow + ntfy adapter | Not started | [05-ack-flow-ntfy.md](05-ack-flow-ntfy.md) |
