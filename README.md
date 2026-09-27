@@ -67,7 +67,7 @@ requests/          REST Client (.http) files
 
 ### Determinism rule
 
-Code in `src/domain/**` must not read ambient time or randomness. `Date.now`, argless `new Date()`, `Math.random`, `performance.now` and `crypto.randomUUID`/`getRandomValues` are lint errors there. Inject the `Clock` and `IdGenerator` ports instead. The rule lives in `biome-plugins/domain-determinism.grit` and is enabled by `src/domain/biome.json`.
+Code in `src/domain/**` must not read ambient time or randomness. `Date.now`, argless `new Date()`, bare `Date()`, `Temporal.Now`, `Math.random`, `performance.now` and `crypto.randomUUID`/`getRandomValues` (with or without a `globalThis.` prefix) are lint errors there. Inject the `Clock` and `IdGenerator` ports instead. The rule lives in `biome-plugins/domain-determinism.grit` and is enabled by `src/domain/biome.json`.
 
 ## Testing notes
 
@@ -80,7 +80,7 @@ Code in `src/domain/**` must not read ambient time or randomness. `Date.now`, ar
 
 ## Deployment
 
-`.github/workflows/deploy.yml` deploys to **staging** on every push to `main` and to **production** on `v*` tags. It stays inert until the `CLOUDFLARE_API_TOKEN` repository secret exists. One-time setup:
+`.github/workflows/deploy.yml` deploys to **staging** on every push to `main` and to **production** on `v*` tags. Every deploy first runs the full CI suite, and a production tag must point at a commit that is already on `main`. The workflow stays inert until the `CLOUDFLARE_API_TOKEN` repository secret exists. One-time setup:
 
 1. Create D1 databases and paste their IDs into `wrangler.jsonc`:
    ```sh

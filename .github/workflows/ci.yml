@@ -4,6 +4,8 @@ on:
   pull_request:
   push:
     branches: [main]
+  # Called by deploy.yml so nothing ships without passing these checks.
+  workflow_call:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
