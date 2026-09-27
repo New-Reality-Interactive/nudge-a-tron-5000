@@ -62,8 +62,8 @@ Greenfield service for **nagging reminders**: a reminder fires on a (possibly re
 | relentless | 10m | 0.5 | 2m | 4 → 5 |
 
 **Rules** (each one is a pure function, and each gets property-based tests):
-- **Carry-over.** When the next occurrence fires while the previous one is unacked, the previous one becomes `MISSED(superseded)`. The new occurrence starts at `min(prev.level + 1, maxLevel)`. Acking resets to level 0 for the next occurrence.
-- **Cap.** Stop when `now − scheduledFor ≥ maxDuration` or `attempts ≥ maxAttempts`, whichever comes first. The system default is 24h / 100 attempts, and it's enforced even when the reminder leaves the cap unset.
+- **Carry-over.** When the next occurrence fires while the previous one is unacked, the previous one becomes `MISSED(superseded)`. After an unacked close (`superseded` or `cap`), the new occurrence starts at `min(prev.level + 1, maxLevel)` if the previous one sent a nag, and at `prev.level` if it sent none (e.g. deferred by quiet hours). Acking resets to level 0 for the next occurrence.
+- **Cap.** Stop when `now − scheduledFor ≥ maxDuration` or `attempts ≥ maxAttempts`, whichever comes first. The system default is 24h / 20 attempts (see [ADR 0005](adr/0005-escalation-cap-and-quiet-hours-semantics.md)), and it's enforced even when the reminder leaves the cap unset.
 - **Quiet hours.** A nag due inside the user's local window is deferred to the window end (a `DEFERRED_QUIET` event). DST-safe via tz-aware math.
 - **Recurrence.** `nextOccurrence(rrule, dtstart, tz, after)` is computed in wall-clock time and then resolved to an instant. Use Temporal (`temporal-polyfill` if the Workers runtime lacks it) plus `rrule-temporal`. DST gaps/overlaps follow RFC 5545 semantics.
 

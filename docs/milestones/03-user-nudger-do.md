@@ -25,6 +25,8 @@ Make the Durable Object that runs each user's reminders reliable. It stores remi
    2. After the commit, deliver the pending outbox rows through the `Notifier` port. On success, mark the row sent. On failure, increment `tries`, set `nextTryAt` with backoff, and record a `SEND_FAILED` event.
    3. Set the next alarm.
 8. **`Notifier` port** in `src/app`, plus a fake adapter for tests that records every send. The real ntfy adapter comes in M5.
+   - **Production `Clock` and `IdGenerator`** for the `src/app/ports.ts` ports from M2: a system clock, and a UUIDv7 generator (RFC 9562, on `crypto.getRandomValues`) that takes its timestamp from an injected `Clock`. M2 has only the ports and the test fakes (`test/support/fakes.ts`).
+   - Creating the next occurrence calls M2's `startLevel` with the reminder's most recent closed occurrence (see ADR 0005).
 9. **User settings in the DO:** timezone and quiet hours, needed for M2's quiet-hours rule. They're set through an RPC method for now; M4 adds `PATCH /v1/me` on top of it.
 
 ## Out of scope
@@ -91,9 +93,12 @@ Load `cloudflare:durable-objects` and `cloudflare:wrangler` before planning.
 - A significant new decision gets an ADR in `docs/adr/`.
 - In the same PR, update the spec's Status and acceptance checklist, and the table in
   `docs/milestones/README.md`.
-- When implementation is complete, tell me it's ready for `/code-review`. Don't push until I say so.
+- Don't run `/code-review` until I say yes to it (see below), and don't push until I say so.
 
 ## When done, report
 What was built, commits, typecheck/lint/test/coverage results (with output), deviations from
 the spec and why, new dependencies, the post-merge checks I need to do, and any manual steps.
+
+Then, as the last thing in that message and on its own line, ask me whether to run
+`/code-review` now. If I say yes, run it, fix what it finds with my approval, and report again.
 ```

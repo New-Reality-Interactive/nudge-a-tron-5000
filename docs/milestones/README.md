@@ -5,7 +5,7 @@ The MVP is delivered in milestones. Each has its own spec here, and each is buil
 | # | Milestone | Status | Spec |
 |---|---|---|---|
 | 1 | Scaffold | ✅ Done (`v0.1.0`) | [01-scaffold.md](01-scaffold.md) |
-| 2 | Domain core | Not started | [02-domain-core.md](02-domain-core.md) |
+| 2 | Domain core | ✅ Done | [02-domain-core.md](02-domain-core.md) |
 | 3 | UserNudger Durable Object | Not started | [03-user-nudger-do.md](03-user-nudger-do.md) |
 | 4 | HTTP API + auth | Not started | [04-http-api-auth.md](04-http-api-auth.md) |
 | 5 | Ack flow + ntfy adapter | Not started | [05-ack-flow-ntfy.md](05-ack-flow-ntfy.md) |
@@ -20,7 +20,7 @@ Milestones depend on each other in order. Don't start one until the previous one
 2. **Paste the milestone's kickoff prompt.** It's the "Kickoff prompt" section at the bottom of each spec, and it names the skills to load.
 3. **Review the plan.** The session reads the spec and the relevant code, then proposes a plan and waits. Push back on anything unclear before you approve it.
 4. **Let it implement.** It works on a `feat/…` branch, commits in logical groups, and runs typecheck, lint and tests before every commit.
-5. **Review the code.** Once implementation is done, ask for `/code-review` and have the session fix what it finds.
+5. **Review the code.** The session ends its report by asking whether to run `/code-review`. Say yes, and it runs the review and fixes what it finds.
 6. **Say "push".** The session pushes, opens a PR following the template, watches `verify`, and gives you the URL.
 7. **Review and merge** in the GitHub UI. Merging to `main` deploys to staging unless only docs, tests or config changed.
 8. **Do the post-merge checks** listed in the spec, such as a staging smoke test or checking a migration ran.
@@ -52,9 +52,12 @@ Implement `docs/milestones/{{FILE}}.md`. That spec is the scope. Follow `CLAUDE.
 - A significant new decision gets an ADR in `docs/adr/`.
 - In the same PR, update the spec's Status and acceptance checklist, and the table in
   `docs/milestones/README.md`.
-- When implementation is complete, tell me it's ready for `/code-review`. Don't push until I say so.
+- Don't run `/code-review` until I say yes to it (see below), and don't push until I say so.
 
 ## When done, report
 What was built, commits, typecheck/lint/test/coverage results (with output), deviations from
 the spec and why, new dependencies, the post-merge checks I need to do, and any manual steps.
+
+Then, as the last thing in that message and on its own line, ask me whether to run
+`/code-review` now. If I say yes, run it, fix what it finds with my approval, and report again.
 ```
