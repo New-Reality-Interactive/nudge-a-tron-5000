@@ -11,6 +11,7 @@ A REST API for **nagging reminders**. A reminder fires on a schedule, which can 
 ## Documentation
 
 - [Architecture and plan](docs/architecture.md)
+- [Milestones](docs/milestones/README.md): one spec per milestone, each with a kickoff prompt
 - Architecture Decision Records:
   - [0001: Cloudflare Workers with one Durable Object per user](docs/adr/0001-cloudflare-workers-do-per-user.md)
   - [0002: ntfy first, behind a `Notifier` port](docs/adr/0002-ntfy-first-behind-notifier-port.md)

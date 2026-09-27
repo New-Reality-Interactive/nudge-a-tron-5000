@@ -6,7 +6,8 @@ behind a `Notifier` port. Target: $0 hosting.
 
 **Source of truth:** `docs/architecture.md` (plan and milestones) and `docs/adr/`. Read them
 before designing anything. If the plan looks wrong or ambiguous, ask. Don't improvise.
-Significant new decisions get a new ADR.
+Significant new decisions get a new ADR. Per-milestone scope, tests and acceptance criteria
+are in `docs/milestones/`. Update a milestone's Status and checklist in the PR that delivers it.
 
 ## Commands
 - `npm run typecheck`: checks `wrangler types` output is current, then `tsc --noEmit` (TS 7)
