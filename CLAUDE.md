@@ -51,8 +51,10 @@ Significant new decisions get a new ADR.
 - D1: `migrations/d1/*.sql`, applied by `deploy.yml` (`wrangler d1 migrations apply --remote`)
   before `wrangler deploy`. Migrations must be forward-only and safe to run on a live database.
 - DO SQLite: `migrations/do/`, applied inside `UserNudger` (mechanism defined in Milestone 3).
-- Merging to `main` runs CI, then deploys to staging. A `v*` tag on a commit already on `main`
-  runs CI, then deploys to production.
+- Merging to `main` runs CI, then deploys to staging, unless every changed file is in
+  `paths-ignore` in `deploy.yml` (docs, tests, editor/lint config). A `v*` tag on a commit
+  already on `main` runs CI, then deploys to production. Anything that can change the bundle
+  or the database (including `tsconfig.json`) must stay off that ignore list.
 
 ## Git workflow
 - Never commit to `main`. Branch from an up-to-date `main`: `feat/…`, `fix/…`, `chore/…`, `docs/…`.
