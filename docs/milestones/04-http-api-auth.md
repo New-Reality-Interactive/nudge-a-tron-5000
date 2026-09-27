@@ -21,12 +21,27 @@ Put the versioned REST API in front of the `UserNudger` DO: per-user API keys st
    - Revoked or unknown keys get a 401 problem response.
    - The middleware puts `userId` on the request context.
 3. **Admin auth:** admin routes require `ADMIN_API_KEY`, the Worker secret, compared in constant time.
-4. **Routes** (`/v1`, Hono with `@hono/zod-openapi`). The user's DO is always found with `idFromName(userId)`:
-   - `POST /v1/reminders`, `GET /v1/reminders`, `GET/PATCH/DELETE /v1/reminders/{id}`
-   - `GET /v1/reminders/{id}/occurrences`, `GET /v1/occurrences/{id}/events`
-   - `POST /v1/occurrences/{id}/ack`: API-client ack
-   - `GET /v1/me`, `PATCH /v1/me`: timezone and quiet hours
-   - Admin: `POST /v1/admin/users`, `POST /v1/admin/users/{id}/keys` (returns the full key **once**), `DELETE /v1/admin/users/{id}/keys/{keyId}`
+4. **Routes** (`/v0`, Hono with `@hono/zod-openapi`). The user's DO is always found with `idFromName(userId)`:
+   - `POST /v0/reminders`, `GET /v0/reminders`, `GET/PATCH/DELETE /v0/reminders/{id}`
+   - `GET /v0/reminders/{id}/occurrences`, `GET /v0/occurrences/{id}/events`
+   - `POST /v0/occurrences/{id}/ack`: API-client ack
+   - `GET /v0/me`, `PATCH /v0/me`: timezone and quiet hours
+   - Admin: `POST /v0/admin/users`, `POST /v0/admin/users/{id}/keys` (returns the full key **once**), `DELETE /v0/admin/users/{id}/keys/{keyId}`
+
+   Structure it so a future major version only adds a sibling directory ([ADR 0007](../adr/0007-versioning-and-compatibility.md)):
+   ```
+   src/http/
+     app.ts        root app: mounts /healthz, /a (M5) and /v0
+     middleware/   auth, problem+json, idempotency: shared by all versions
+     v0/
+       routes/     reminders, occurrences, me, admin
+       schemas.ts  zod + OpenAPI: the v0 wire contract
+       mappers.ts  app DTOs ↔ v0 wire format
+       openapi.ts  builds /v0/openapi.json
+   ```
+   - **Define the v0 schemas separately, and map to them explicitly.** Don't return the DTOs from `src/app/dto.ts` as the API response. Those types are internal and may change freely; the v0 schemas are the frozen public contract, and the mappers are where the compiler shows what a change touches.
+   - **Give each event type's `data` its own v0 schema.** Today `listEvents` returns the stored JSON unchanged, which would make the internal event shape public.
+   - Nothing below `src/http` knows about versions. The domain, app and DO layers are shared by every major version.
 5. **Validation (zod)** on every input. **RRULE limits** prevent alarm storms:
    - cap `COUNT`
    - no `FREQ` finer than a minute
@@ -37,8 +52,8 @@ Put the versioned REST API in front of the `UserNudger` DO: per-user API keys st
 6. **Errors:** everything returns RFC 9457 `application/problem+json`. That covers validation errors (with field details), 401, 403, 404, 409 and 500. Responses never include stack traces or secrets.
 7. **`Idempotency-Key`** on mutating POSTs: the same key with the same body replays the stored response, and the same key with a different body gets a 409. Keys are stored per user in the DO, with an expiry (propose one).
 8. **OpenAPI:**
-   - Serve the spec at `GET /openapi.json`.
-   - Commit a generated `openapi.json` snapshot.
+   - Serve the spec at `GET /v0/openapi.json`. Each supported major version has its own document ([ADR 0007](../adr/0007-versioning-and-compatibility.md)).
+   - Commit a generated snapshot at `openapi/v0.json`.
    - Add a CI step that fails when the committed snapshot differs from the generated one: an **OpenAPI diff check**, added to `ci.yml` in the `verify` job.
 9. **REST Client files:** add `requests/*.http` covering the main flows.
 
@@ -57,6 +72,7 @@ Put the versioned REST API in front of the `UserNudger` DO: per-user API keys st
   - Validation and RRULE limits: each rejected case returns problem+json with details.
   - Idempotency: replay, and a conflict on a different body.
   - The OpenAPI document is valid, and every route appears in it.
+  - Keep the route tests under a per-version directory (for example `test/integration/http/v0/`). They keep running unchanged while `/v0` is served, which is what proves it still works after a later major version ships.
 - **Unit:** key parsing and hashing, the RRULE-limit validator, and mapping errors to problem responses.
 
 ## Acceptance criteria
@@ -75,7 +91,8 @@ Put the versioned REST API in front of the `UserNudger` DO: per-user API keys st
 - Where do `users` live? D1 is the source of truth. Does the DO keep a copy of timezone and quiet hours, or does it get them on each call?
 - How are lists paginated: by cursor or offset? What's the default page size?
 - How long are idempotency keys kept, and are they stored in the DO or in D1?
-- `DELETE /v1/reminders/{id}`: soft delete (status `DELETED`) as the domain model says. Confirm what happens to any open occurrence.
+- `DELETE /v0/reminders/{id}`: soft delete (status `DELETED`) as the domain model says. Confirm what happens to any open occurrence.
+- Should CI also fail on a **breaking** change to the OpenAPI document, for example with `oasdiff`, to enforce [ADR 0007](../adr/0007-versioning-and-compatibility.md)? That would be a new dev dependency.
 
 ## Post-merge
 

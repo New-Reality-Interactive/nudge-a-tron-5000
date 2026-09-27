@@ -66,8 +66,26 @@ are in `docs/milestones/`. Update a milestone's Status and checklist in the PR t
 - Conventional Commits, grouped logically. Typecheck, lint and test must pass before each commit.
 - **Don't push until the user says so.** Then push with `-u`, open a PR with `gh pr create`
   following `.github/pull_request_template.md`, watch the `verify` check, and report the PR URL.
-- **Never merge PRs** and never push tags unless asked. The `main` ruleset requires `verify`
-  and an up-to-date branch, with no bypass.
+- **Never merge PRs.** The `main` ruleset requires `verify` and an up-to-date branch, with no
+  bypass.
+- **Every deployable merge goes to production** (ADR 0007). When the user says a PR is merged,
+  update `main` and wait for its staging deploy to succeed. Then, without asking, push an
+  annotated tag on that merge commit and watch the production deploy:
+  - a milestone PR: `vX.N.0`, where N is the milestone (M4 is `v0.4.0`, M6 is `v0.6.0`)
+  - any other PR that deployed to staging: the next patch, `vX.N.(P+1)`
+  - a docs- or tests-only PR (no staging deploy): no tag
+
+  If staging failed, stop and report instead. The major version X is `0` and changes only when
+  the user says so. Push any other tag only when asked.
+
+## Compatibility (ADR 0007)
+- The API lives at `/v0`; its URI major always equals the release major. Within a major, every
+  change is backwards compatible: add routes, optional inputs, response fields and enum values;
+  never remove, rename, retype or tighten. A breaking change needs a new major (`/v1` beside
+  `/v0`), and at most two majors are served at once. Stop and ask before any breaking change.
+- Ack links already sent must keep working; a new token format must verify alongside the old.
+- D1 and DO migrations only add (tables, columns with defaults, indexes), so older code and
+  both served majors keep working against a newer schema.
 
 ## Useful paths
 - `requests/*.http`: REST Client requests against `npm run dev`
