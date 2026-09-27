@@ -34,4 +34,6 @@ No alternative is needed.
 
 - `rrule-temporal` bundles its own copy of the polyfill for internal calendar math, so the polyfill code is shipped twice. That's acceptable at 97 KiB gzip total. We should revisit once workerd ships native Temporal: we'd drop `temporal-polyfill` and pass the native namespace.
 - RRULE input needs limits to prevent alarm storms: cap `COUNT`, forbid sub-minute `FREQ`, and require a minimum interval. These are enforced by zod validation in Milestone 4.
-- The spike is throwaway. It gets deleted once `src/domain/recurrence.ts` has its own unit and property tests (DST, leap days) in Milestone 2.
+- The spike was throwaway. It was deleted in Milestone 2, once `src/domain/recurrence.ts` had its own unit and property tests (DST, leap days, and the spike's New York examples, which are now example tests).
+- A local time that doesn't exist, because the clocks go forward, is **skipped**. RFC 5545 §3.3.10 requires this, and `rrule-temporal` does it: a daily 02:30 `America/New_York` reminder doesn't fire on 2026-03-08. A repeated local time resolves to its first instance.
+- A `dtstart` that itself falls in a DST gap is moved forward, and `rrule-temporal` then keeps the whole series at the moved time (03:30 instead of 02:30). Milestone 4's validation rejects such a `dtstart`.
