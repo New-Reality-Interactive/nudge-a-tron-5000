@@ -71,7 +71,7 @@ Make the MVP safe to leave running for family and friends: abuse limits, logs yo
 
 ## Post-merge
 
-- Tag the release as **`v1.0.0`**: the MVP is complete.
+- The session tags the release **`v0.6.0`**, per the milestone versioning rule in `CLAUDE.md`. This completes the MVP.
 - Keep the staging soak reminders running for a while as a canary.
 
 ## Kickoff prompt
