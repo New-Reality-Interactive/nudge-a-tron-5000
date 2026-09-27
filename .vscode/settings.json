@@ -1,0 +1,38 @@
+{
+  // Formatting and linting: Biome only.
+  "editor.defaultFormatter": "biomejs.biome",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports.biome": "explicit",
+    "source.fixAll.biome": "explicit"
+  },
+  "[typescript]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[javascript]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[json]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[jsonc]": { "editor.defaultFormatter": "biomejs.biome" },
+  "biome.requireConfiguration": true,
+
+  // TypeScript 7 (native) from the workspace. VS Code's built-in TS server cannot load
+  // TS 7, so this routes IntelliSense through the "TypeScript 7" extension
+  // (typescriptteam.native-preview), keeping the editor on the same compiler as CI.
+  "js/ts.tsdk.path": "node_modules/typescript/lib",
+  "js/ts.tsdk.promptToUseWorkspaceVersion": true,
+  "js/ts.experimental.useTsgo": true,
+
+  // Vitest explorer: both projects (unit + integration) come from the root config.
+  "vitest.rootConfig": "./vitest.config.ts",
+  "vitest.nodeEnv": { "NODE_ENV": "test" },
+
+  // Keep wrangler's local state out of search and the file watcher.
+  "files.watcherExclude": {
+    "**/.wrangler/**": true,
+    "**/coverage/**": true,
+    "**/node_modules/**": true
+  },
+  "search.exclude": {
+    "**/.wrangler": true,
+    "**/coverage": true,
+    "worker-configuration.d.ts": true
+  },
+  "files.associations": { "wrangler.json": "jsonc" }
+}

@@ -1,0 +1,42 @@
+{
+  "name": "nudge-a-tron-5000",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Nagging-reminder REST API on Cloudflare Workers + Durable Objects",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "cf-typegen": "wrangler types",
+    "typecheck": "wrangler types --check && tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "test": "vitest run --project unit --project integration",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
+    "coverage": "vitest run --project unit --coverage"
+  },
+  "dependencies": {
+    "hono": "^4.13.9",
+    "rrule-temporal": "^2.2.7",
+    "temporal-polyfill": "^1.0.5"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.14",
+    "@cloudflare/vitest-pool-workers": "^0.22.0",
+    "@types/node": "^24.19.0",
+    "@vitest/coverage-v8": "^4.1.11",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11",
+    "wrangler": "^4.142.0"
+  },
+  "allowScripts": {
+    "esbuild": true,
+    "workerd": true,
+    "fsevents": false
+  }
+}
