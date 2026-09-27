@@ -47,6 +47,9 @@ are in `docs/milestones/`. Update a milestone's Status and checklist in the PR t
   holds both majors in `.github/dependabot.yml`.
 - `allowScripts` in `package.json` only allows install scripts for esbuild and workerd. Ask
   before approving another package.
+- `overrides` in `package.json` forces `sharp` 0.35.4 under `@cloudflare/vitest-pool-workers`,
+  whose `miniflare` pins a vulnerable 0.35.2 (GHSA-rgj7-g3m4-5g8c). Remove it once a pool release
+  ships a `miniflare` with `sharp` ≥ 0.35.4.
 
 ## Migrations and deploys
 - D1: `migrations/d1/*.sql`, applied by `deploy.yml` (`wrangler d1 migrations apply --remote`)
