@@ -32,4 +32,4 @@ This page records what was built and where to find it. There is nothing left to 
 
 - Delete the recurrence spike in Milestone 2.
 - Raise `compatibility_date` and lift the Vitest 5 hold when `@cloudflare/vitest-pool-workers` supports newer versions.
-- Token expiry: the Cloudflare API token expires on 2027-09-27. The `nudge-a-tron-5000-token` GitHub token expires on the date you chose when you created it. Renew both before they expire.
+- Token expiry: the Cloudflare API token and the `nudge-a-tron-5000-token` GitHub token both expire on **2027-09-27**. Renew both before then.

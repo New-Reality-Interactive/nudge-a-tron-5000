@@ -34,7 +34,7 @@ Make the MVP safe to leave running for family and friends: abuse limits, logs yo
    - how to deploy and roll back (`wrangler rollback` and redeploying a tag)
    - how to apply and verify D1 migrations, and what to do if one fails
    - how to rotate `ACK_SIGNING_KEY` with `kid`, `ADMIN_API_KEY`, a user's API key and an ntfy topic
-   - how to renew the Cloudflare API token (expires 2027-09-27) and the `nudge-a-tron-5000-token` GitHub token (expires on the date set when it was created) before they expire
+   - how to renew the Cloudflare API token and the `nudge-a-tron-5000-token` GitHub token before they both expire on 2027-09-27
    - how to read Workers Logs for a `requestId`
    - how to handle a leaked topic or key
 6. **Staging soak:** run real reminders on staging for at least a few days with a real ntfy topic. Include a DST-neutral daily reminder and one that crosses quiet hours. Write down what you saw in the PR.
