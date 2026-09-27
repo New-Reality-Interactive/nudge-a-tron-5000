@@ -110,10 +110,13 @@ Load `cloudflare:workers-best-practices` and `cloudflare:wrangler` before planni
 - The D1 migration only ever adds: never rewrite a merged migration. Call it out in the PR.
 - In the same PR, update the spec's Status and acceptance checklist, and the table in
   `docs/milestones/README.md`.
-- When implementation is complete, tell me it's ready for `/code-review`. Don't push until I say so.
+- Don't run `/code-review` until I say yes to it (see below), and don't push until I say so.
 
 ## When done, report
 What was built, commits, typecheck/lint/test/coverage results (with output), deviations from
 the spec and why, new dependencies, the post-merge checks I need to do (including verifying
 the D1 migration on staging), and any manual steps.
+
+Then, as the last thing in that message and on its own line, ask me whether to run
+`/code-review` now. If I say yes, run it, fix what it finds with my approval, and report again.
 ```
