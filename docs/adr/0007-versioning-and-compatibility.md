@@ -33,9 +33,10 @@ Each supported major version has its own OpenAPI document, `GET /vN/openapi.json
 Every release within a major version stays backwards compatible with every earlier release of that major version. That covers:
 
 - **The HTTP API.**
-  - Not allowed: removing or renaming a route, field, parameter, error code or enum value; changing a field's type or meaning; making an optional input required; tightening validation so that previously valid input is rejected; changing default behaviour.
+  - Not allowed: removing or renaming a route, field, parameter, error code or enum value; changing a field's type or meaning; making an optional input required; tightening validation so that previously valid input is rejected; changing the documented default of an omitted input.
   - Allowed: new routes, new optional request fields, new response fields, new enum values and new error codes for new situations.
   - The API documentation tells clients to ignore unknown response fields and enum values, so the allowed additions really are safe for them.
+  - The contract is the API's shape and meaning, not the product's tuning. How often and how insistently reminders nag can change within a major version: strength profile intervals and priorities, the default cap, quiet-hours edge cases and retry backoff. Such changes are recorded in an ADR, as ADR 0005 did, so they're deliberate and visible.
 - **Ack links.** A token in a notification someone has already received keeps working until it expires. A new token format must be introduced alongside the old one, which keeps verifying. Signing-key rotation already works this way (ADR 0003).
 - **Stored data.** D1 and Durable Object migrations only ever add: new tables, new columns with defaults, new indexes. Renaming or dropping happens only after no supported release reads the old shape. This also keeps rolling back Worker code safe, because Durable Objects that already migrated keep working with the older code.
 

@@ -27,6 +27,21 @@ Put the versioned REST API in front of the `UserNudger` DO: per-user API keys st
    - `POST /v0/occurrences/{id}/ack`: API-client ack
    - `GET /v0/me`, `PATCH /v0/me`: timezone and quiet hours
    - Admin: `POST /v0/admin/users`, `POST /v0/admin/users/{id}/keys` (returns the full key **once**), `DELETE /v0/admin/users/{id}/keys/{keyId}`
+
+   Structure it so a future major version only adds a sibling directory ([ADR 0007](../adr/0007-versioning-and-compatibility.md)):
+   ```
+   src/http/
+     app.ts        root app: mounts /healthz, /a (M5) and /v0
+     middleware/   auth, problem+json, idempotency: shared by all versions
+     v0/
+       routes/     reminders, occurrences, me, admin
+       schemas.ts  zod + OpenAPI: the v0 wire contract
+       mappers.ts  app DTOs ↔ v0 wire format
+       openapi.ts  builds /v0/openapi.json
+   ```
+   - **Define the v0 schemas separately, and map to them explicitly.** Don't return the DTOs from `src/app/dto.ts` as the API response. Those types are internal and may change freely; the v0 schemas are the frozen public contract, and the mappers are where the compiler shows what a change touches.
+   - **Give each event type's `data` its own v0 schema.** Today `listEvents` returns the stored JSON unchanged, which would make the internal event shape public.
+   - Nothing below `src/http` knows about versions. The domain, app and DO layers are shared by every major version.
 5. **Validation (zod)** on every input. **RRULE limits** prevent alarm storms:
    - cap `COUNT`
    - no `FREQ` finer than a minute
@@ -57,6 +72,7 @@ Put the versioned REST API in front of the `UserNudger` DO: per-user API keys st
   - Validation and RRULE limits: each rejected case returns problem+json with details.
   - Idempotency: replay, and a conflict on a different body.
   - The OpenAPI document is valid, and every route appears in it.
+  - Keep the route tests under a per-version directory (for example `test/integration/http/v0/`). They keep running unchanged while `/v0` is served, which is what proves it still works after a later major version ships.
 - **Unit:** key parsing and hashing, the RRULE-limit validator, and mapping errors to problem responses.
 
 ## Acceptance criteria

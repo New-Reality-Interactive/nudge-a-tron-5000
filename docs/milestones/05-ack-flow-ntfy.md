@@ -16,6 +16,7 @@ Send real notifications and let people stop them. Nags go to the user's phone th
    - `kid` selects the signing key. Support a current key plus older keys that are still valid, so the key can be rotated.
    - Verification rejects a bad signature, an unknown `kid` or an expired token, and compares in constant time.
    - The token is URL-safe (base64url).
+   - **The token starts with a format marker**, for example `a1.`, separate from `kid`. ADR 0007 requires ack links already sent to keep working, so a future token format must be told apart from this one and verified alongside it. Tokens sent without a marker could never be told apart later.
 2. **Public ack routes** (no API key):
    - `GET /a/{token}`: a minimal HTML confirmation page with a POST form. It never acknowledges anything, so link previews and prefetchers can't trigger it.
    - `POST /a/{token}`: verifies the token, routes to the user's DO with `idFromName(userId)`, and acknowledges the occurrence.
@@ -26,6 +27,7 @@ Send real notifications and let people stop them. Nags go to the user's phone th
    - The priority comes from the escalation level (M2).
    - Each notification has an `http` action button that POSTs to `/a/{token}`, plus a `view` action that opens the confirmation page as a fallback.
    - **Titles only by default** ([ADR 0002](../adr/0002-ntfy-first-behind-notifier-port.md)). The body is never sent unless a reminder explicitly allows it.
+   - Any field added to the outbox `Notification` payload, such as the body opt-in, must be optional when read. Outbox rows written by an earlier release can still be pending when the new code delivers them (ADR 0007, add-only).
 4. **ntfy topics:** each user gets a random 128-bit topic, created along with the user. It's shown to that user only through `GET /v0/me`, never logged, and never returned on any other route.
 5. **Wiring:** in production, the DO builds its notifier from `NtfyNotifier`. The base URL comes from config, so it can point at a self-hosted ntfy later.
 
