@@ -43,15 +43,15 @@ Greenfield service for **nagging reminders**: a reminder fires on a (possibly re
 
 **Reliability.** Alarms are at-least-once, so every alarm step must be idempotent:
 1. In one transaction: advance the occurrence state, append the `event` rows, and insert an `outbox` row keyed `occurrenceId:attempt` (a unique key, so duplicates are no-ops).
-2. After commit: deliver pending outbox rows. On failure, back off and retry `tries`, and the retry time feeds into the next alarm computation.
+2. After commit: deliver pending outbox rows. On failure, back off and retry `tries`, and the retry time feeds into the next alarm computation. Backoff, the retry limit and the schema migrations are in [ADR 0006](adr/0006-user-nudger-storage-migrations-delivery.md).
 3. `setAlarm(min(nextNagAt, nextOccurrenceAt, outbox.nextTryAt, quietHoursEnd))`.
 
 ## Domain model (pure core, no I/O)
 - **User**: `id, name, timezone, quietHours{start,end}?, ntfyTopic` (128-bit random, unguessable)
 - **Reminder**: `id, title, body?, dtstart (local datetime + tz), rrule?, strength, cap{maxDuration?, maxAttempts?}, status(ACTIVE|COMPLETED|DELETED)`
 - **Occurrence**: `id, reminderId, scheduledFor, level, attempts, state, nextNagAt, closedAt, closeReason`
-  - `PENDING → NAGGING → ACKED | MISSED(cap | superseded)`
-- **Event** (audit): `id, occurrenceId, type (SCHEDULED|NAG_SENT|SEND_FAILED|DEFERRED_QUIET|ACKED|MISSED|SUPERSEDED), at, data`
+  - `PENDING → NAGGING → ACKED | MISSED(cap | superseded) | CANCELLED` (`CANCELLED` when its reminder is deleted; see [ADR 0006](adr/0006-user-nudger-storage-migrations-delivery.md))
+- **Event** (audit): `id, occurrenceId, type (SCHEDULED|NAG_SENT|SEND_FAILED|DEFERRED_QUIET|ACKED|MISSED|SUPERSEDED|CANCELLED), at, data`
 
 **Strength profiles.** These are pure data, so they're tunable and testable. At level `n`: `interval = max(floor, initial × factor^n)` and `priority = profile.priorityAt(n)`.
 
