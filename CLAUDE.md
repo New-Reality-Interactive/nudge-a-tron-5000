@@ -66,8 +66,13 @@ are in `docs/milestones/`. Update a milestone's Status and checklist in the PR t
 - Conventional Commits, grouped logically. Typecheck, lint and test must pass before each commit.
 - **Don't push until the user says so.** Then push with `-u`, open a PR with `gh pr create`
   following `.github/pull_request_template.md`, watch the `verify` check, and report the PR URL.
-- **Never merge PRs** and never push tags unless asked. The `main` ruleset requires `verify`
-  and an up-to-date branch, with no bypass.
+- **Never merge PRs.** The `main` ruleset requires `verify` and an up-to-date branch, with no
+  bypass.
+- **Every merged milestone goes to production.** When the user says a milestone PR is merged,
+  update `main`, wait for its staging deploy to succeed, then push an annotated tag `v0.N.0`
+  (milestone N) on that merge commit without asking, and watch the production deploy. If
+  staging failed, stop and report instead. Push any other tag only when asked. Non-milestone
+  merges reach production with the next milestone's tag.
 
 ## Useful paths
 - `requests/*.http`: REST Client requests against `npm run dev`
