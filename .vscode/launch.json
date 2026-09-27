@@ -1,0 +1,44 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // Start `npm run dev` first (or run the "dev" task); wrangler exposes the
+      // workerd inspector on 9229 by default.
+      "name": "Attach to wrangler dev",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "cwd": "/",
+      "resolveSourceMapLocation": null,
+      "attachExistingChildren": false,
+      "autoAttachChildProcesses": false,
+      "sourceMaps": true
+    },
+    {
+      "name": "Debug current test file (unit, Node)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
+      "args": ["run", "--project", "unit", "${relativeFile}"],
+      "autoAttachChildProcesses": true,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
+      "smartStep": true,
+      "console": "integratedTerminal"
+    },
+    {
+      // workerd ignores --inspect-brk, so the task runs Vitest in watch mode with the
+      // inspector open on 9230. Once attached, press `r` in the task terminal (or save
+      // the file) to re-run the tests with breakpoints active.
+      "name": "Debug current test file (integration, workerd)",
+      "type": "node",
+      "request": "attach",
+      "port": 9230,
+      "cwd": "/",
+      "resolveSourceMapLocation": null,
+      "attachExistingChildren": false,
+      "autoAttachChildProcesses": false,
+      "sourceMaps": true,
+      "preLaunchTask": "test: integration debug server"
+    }
+  ]
+}

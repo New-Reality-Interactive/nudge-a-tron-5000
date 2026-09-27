@@ -1,0 +1,14 @@
+{
+  "recommendations": [
+    "biomejs.biome",
+    "vitest.explorer",
+    "github.vscode-github-actions",
+    "42crunch.vscode-openapi",
+    "humao.rest-client",
+    "qwtel.sqlite-viewer",
+    "editorconfig.editorconfig",
+    "cloudflare.cloudflare-workers-bindings-extension",
+    "typescriptteam.native-preview"
+  ],
+  "unwantedRecommendations": ["esbenp.prettier-vscode", "dbaeumer.vscode-eslint"]
+}

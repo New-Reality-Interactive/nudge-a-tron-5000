@@ -1,0 +1,50 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "dev",
+      "type": "npm",
+      "script": "dev",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "wrangler",
+        "pattern": { "regexp": "^✘ \\[ERROR\\] (.*)$", "message": 1 },
+        "background": {
+          "activelyMatches": true,
+          "beginsPattern": "wrangler",
+          "endsPattern": "Ready on"
+        }
+      }
+    },
+    {
+      "label": "test",
+      "type": "npm",
+      "script": "test",
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "typecheck",
+      "type": "npm",
+      "script": "typecheck",
+      "group": "build",
+      "problemMatcher": ["$tsc"]
+    },
+    { "label": "lint", "type": "npm", "script": "lint", "problemMatcher": [] },
+    {
+      "label": "test: integration debug server",
+      "type": "shell",
+      "command": "npx vitest --project integration --inspect=9230 --no-file-parallelism ${relativeFile}",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "vitest",
+        "pattern": { "regexp": "^\\s*FAIL\\s+(.*)$", "file": 1 },
+        "background": {
+          "activelyMatches": true,
+          "beginsPattern": "Starting inspector",
+          "endsPattern": "Inspector is listening"
+        }
+      }
+    }
+  ]
+}

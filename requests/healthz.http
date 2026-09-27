@@ -1,0 +1,6 @@
+# REST Client (humao.rest-client). Start the Worker with `npm run dev` first.
+@baseUrl = http://localhost:8787
+
+### Health check
+GET {{baseUrl}}/healthz
+Accept: application/json
