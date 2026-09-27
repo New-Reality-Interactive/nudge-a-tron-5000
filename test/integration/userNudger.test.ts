@@ -205,6 +205,29 @@ describe("UserNudger", () => {
     expect(n.notifier.sent).toMatchObject([{ attempt: 1 }]);
   });
 
+  it("holds a failed nag's retry through quiet hours instead of sending it there", async () => {
+    const n = await testNudger(T0.add({ hours: 12, minutes: 59, seconds: 50 })); // 21:59:50Z
+    value(await n.stub.updateSettings({ quietHours: { start: "22:00", end: "07:00" } }));
+    const reminder = await create(n, { dtstart: "2030-06-10T21:59:50" });
+    n.notifier.failNext(1);
+
+    await fireNextAlarm(n); // fails; retry due at 22:00:20
+    await fireNextAlarm(n); // inside the window: held until 07:00
+    expect(n.notifier.sent).toHaveLength(0);
+    await fireNextAlarm(n); // 22:29:50: the next nag is deferred to 07:00
+    expect(await fireNextAlarm(n)).toEqual(T0.add({ hours: 22 }));
+
+    const [occ] = await occurrencesOf(n, reminder.id);
+    expect(n.notifier.sent.map((s) => s.attempt)).toEqual([2]);
+    expect(await eventTypes(n, occ?.id as string)).toEqual([
+      "SCHEDULED",
+      "NAG_SENT",
+      "SEND_FAILED",
+      "DEFERRED_QUIET",
+      "NAG_SENT",
+    ]);
+  });
+
   it("cancels the open occurrence and clears the alarm when a reminder is deleted", async () => {
     const n = await testNudger();
     const reminder = await create(n, { rrule: "FREQ=DAILY" });

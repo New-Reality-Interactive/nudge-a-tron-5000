@@ -22,6 +22,7 @@
 - The production clock has millisecond precision to match, so a stored instant equals the one it was built from.
 - Recurring occurrences are created **lazily**. A reminder stores `next_occurrence_at`, and the alarm creates the occurrence when it's due. Nothing is created ahead of time.
 - After sleeping through several slots (an outage, or a long gap between wake-ups), the alarm creates **only the latest due slot**. The skipped slots leave no rows. Creating and superseding each of them at once would only add noise, and carry-over wouldn't change, because an occurrence that sent no nag doesn't escalate (ADR 0005).
+- Changing a reminder's schedule moves `next_occurrence_at` to the new schedule's first slot at or after now. If the current next occurrence is already due but the alarm hasn't created it yet (the alarm is late, or an update lands first), the search starts from that slot instead, so an update never drops it. If the schedule didn't change, the same slot is kept. If it did, a slot of the new schedule that's already due fires straight away. (Found in code review.)
 - A reminder becomes `COMPLETED` when its series has no further slot and its last occurrence has closed. A one-shot reminder whose time has already passed is created `COMPLETED`.
 
 ### Deleting a reminder: a new `CANCELLED` state
@@ -38,6 +39,7 @@
    - Each `NAG_SENT` inserts an outbox row keyed `occurrenceId:attempt` with `ON CONFLICT DO NOTHING`.
 2. **After the commit,** it delivers every `PENDING` row that's due:
    - A row whose occurrence has closed, or has already sent a newer nag, is marked `SKIPPED`. A retry never nags after an ack, a cancel or a newer nag.
+   - A row due inside the user's quiet hours waits until the window's end. Waiting isn't a failure, so it records nothing and doesn't count as a try. A nag is never queued inside quiet hours, but its retry can fall there. At the window's end the occurrence's own deferred nag usually fires at the same moment, and the old row is then skipped as above. (Found in code review.)
    - On success, the row is marked `SENT`.
    - On failure, it records `SEND_FAILED { attempt, tries, nextTryAt }` and retries after **30 s × 2^(tries−1), capped at 5 min**. After **5 failed tries** it marks the row `DEAD`, and that last event has `nextTryAt: null`.
    - The occurrence carries on regardless, and its next nag goes out on schedule.

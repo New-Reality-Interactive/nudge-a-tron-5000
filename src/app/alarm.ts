@@ -2,6 +2,7 @@ import { Temporal } from "temporal-polyfill";
 import { effectiveCap } from "../domain/cap";
 import { startLevel } from "../domain/carryOver";
 import { scheduleOccurrence, transition } from "../domain/occurrence";
+import { quietHoursEnd } from "../domain/quietHours";
 import { latestOccurrence, nextOccurrence } from "../domain/recurrence";
 import type { OpenOccurrence } from "../domain/types";
 import type { Notifier, OutboxRow, ReminderRecord, Settings, UseCaseDeps } from "./ports";
@@ -124,19 +125,29 @@ function nagOccurrence(
 /**
  * Delivers every outbox row due at `now`. Call it after `processDue` has committed.
  * A row whose occurrence has closed, or has already moved on to a newer nag, is SKIPPED
- * instead, so a retry never nags after an ack. A failure records SEND_FAILED and retries
- * with backoff, up to MAX_TRIES, then marks the row DEAD. It never throws for a failed
- * send.
+ * instead, so a retry never nags after an ack. A row due inside quiet hours waits for
+ * the window's end, where the occurrence's own deferred nag usually supersedes it.
+ * A failure records SEND_FAILED and retries with backoff, up to MAX_TRIES, then marks
+ * the row DEAD. It never throws for a failed send.
  */
 export async function deliverOutbox(
   deps: UseCaseDeps & { notifier: Notifier },
   now: Temporal.Instant,
 ): Promise<void> {
   const { repo, clock, ids, notifier } = deps;
+  const { timezone, quietHours } = repo.getSettings();
   for (const row of repo.dueOutbox(now)) {
     const occurrence = repo.getOccurrence(row.occurrenceId);
     if (occurrence === null || occurrence.nextNagAt === null || occurrence.attempts > row.attempt) {
       repo.updateOutbox({ ...row, status: "SKIPPED", nextTryAt: null });
+      continue;
+    }
+
+    // A nag is only queued outside quiet hours, but a retry can fall inside them. Waiting
+    // isn't a failure, so it doesn't count as a try.
+    const quietUntil = quietHours === null ? null : quietHoursEnd(now, timezone, quietHours);
+    if (quietUntil !== null) {
+      repo.updateOutbox({ ...row, nextTryAt: quietUntil });
       continue;
     }
 

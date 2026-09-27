@@ -101,6 +101,35 @@ describe("updateReminder", () => {
     expect(moved.nextOccurrenceAt).toBe("2030-06-10T12:30:00Z");
   });
 
+  it("keeps a due slot the alarm hasn't created yet when the schedule is resent", async () => {
+    const h = harness();
+    const r = create(h, { rrule: "FREQ=DAILY" });
+    h.clock.advance({ seconds: 5 }); // the alarm is late
+
+    const updated = value(
+      updateReminder(h.deps, r.id, {
+        dtstart: r.dtstart,
+        timezone: r.timezone,
+        rrule: "FREQ=DAILY",
+      }),
+    );
+    expect(updated.nextOccurrenceAt).toBe("2030-06-10T09:00:00Z");
+
+    await runAlarm(h);
+    expect(h.repo.listOccurrences(r.id).map((o) => o.scheduledFor.toString())).toEqual([
+      "2030-06-10T09:00:00Z",
+    ]);
+    expect(h.notifier.sent).toHaveLength(1);
+  });
+
+  it("fires a due slot of a changed schedule when the alarm is late", () => {
+    const h = harness();
+    const r = create(h, { rrule: "FREQ=DAILY" });
+    h.clock.advance({ minutes: 1 });
+    const updated = value(updateReminder(h.deps, r.id, { rrule: "FREQ=HOURLY" }));
+    expect(updated.nextOccurrenceAt).toBe("2030-06-10T09:00:00Z");
+  });
+
   it("completes a reminder whose new schedule has no future slot and nothing open", () => {
     const h = harness();
     const r = create(h, { dtstart: "2030-06-11T09:00" });

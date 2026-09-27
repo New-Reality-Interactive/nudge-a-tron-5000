@@ -33,9 +33,9 @@ function parseSchedule(
   }
 }
 
-/** The first occurrence at or after `now`. */
-const firstOccurrence = (s: Schedule, now: Temporal.Instant): Temporal.Instant | null =>
-  nextOccurrence(s.rrule, s.dtstart, s.timezone, now.subtract({ nanoseconds: 1 }));
+/** The first occurrence at or after `from`. */
+const firstOccurrence = (s: Schedule, from: Temporal.Instant): Temporal.Instant | null =>
+  nextOccurrence(s.rrule, s.dtstart, s.timezone, from.subtract({ nanoseconds: 1 }));
 
 const liveReminder = (deps: UseCaseDeps, id: string): ReminderRecord | null => {
   const reminder = deps.repo.getReminder(id);
@@ -73,8 +73,10 @@ export function createReminder(
 
 /**
  * Updates a reminder. A schedule change (dtstart, timezone or rrule) moves the next
- * occurrence to the new schedule's first slot at or after now; an open occurrence keeps
- * nagging. Strength and cap changes apply from the next nag.
+ * occurrence to the new schedule's first slot at or after now, or at or after the
+ * current next occurrence if that is already due but the alarm hasn't created it yet,
+ * so an update never drops a due slot. An open occurrence keeps nagging. Strength and
+ * cap changes apply from the next nag.
  */
 export function updateReminder(
   deps: UseCaseDeps,
@@ -97,7 +99,9 @@ export function updateReminder(
       );
       if (!parsed.ok) return parsed;
       schedule = parsed.value;
-      nextOccurrenceAt = firstOccurrence(schedule, now);
+      const due = current.nextOccurrenceAt;
+      const from = due !== null && Temporal.Instant.compare(due, now) < 0 ? due : now;
+      nextOccurrenceAt = firstOccurrence(schedule, from);
       status =
         nextOccurrenceAt !== null || repo.openOccurrence(id) !== null ? "ACTIVE" : "COMPLETED";
     }

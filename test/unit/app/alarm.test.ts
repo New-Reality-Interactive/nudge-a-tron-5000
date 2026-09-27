@@ -1,4 +1,4 @@
-import type { Temporal } from "temporal-polyfill";
+import { Temporal } from "temporal-polyfill";
 import { describe, expect, it } from "vitest";
 import { MAX_TRIES, processDue, retryDelay } from "../../../src/app/alarm";
 import { acknowledge } from "../../../src/app/occurrences";
@@ -153,6 +153,42 @@ describe("processDue and deliverOutbox", () => {
       // The occurrence itself carries on: its next nag is still scheduled.
       expect(h.repo.nextWakeAt()).toEqual(T0.add({ minutes: 30 }));
       expect(h.notifier.sent).toHaveLength(0);
+    });
+
+    it("holds a retry that falls in quiet hours; the deferred nag then supersedes it", async () => {
+      const h = harness(Temporal.Instant.from("2030-06-10T21:59:50Z"));
+      value(updateSettings(h.deps, { quietHours: { start: "22:00", end: "07:00" } }));
+      const reminder = create(h, { dtstart: "2030-06-10T21:59:50" });
+      h.notifier.failNext(1);
+      await runAlarm(h); // fails; retry due at 22:00:20, inside the window
+
+      await runNextAlarm(h);
+      const [occ] = h.repo.listOccurrences(reminder.id);
+      const id = occ?.id as string;
+      expect(h.notifier.sent).toHaveLength(0);
+      expect(h.repo.outbox.get(`${id}:1`)).toMatchObject({
+        status: "PENDING",
+        tries: 1,
+        nextTryAt: Temporal.Instant.from("2030-06-11T07:00:00Z"),
+      });
+      expect(eventTypes(h, id).filter((t) => t === "SEND_FAILED")).toHaveLength(1);
+
+      await runNextAlarm(h); // 22:29:50: the next nag is deferred to 07:00
+      expect(await runNextAlarm(h)).toEqual(Temporal.Instant.from("2030-06-11T07:00:00Z"));
+      expect(h.notifier.sent.map((n) => n.attempt)).toEqual([2]);
+      expect(h.repo.outbox.get(`${id}:1`)).toMatchObject({ status: "SKIPPED" });
+    });
+
+    it("sends a held retry at the window's end when no newer nag is due", async () => {
+      const h = harness(Temporal.Instant.from("2030-06-10T21:59:50Z"));
+      value(updateSettings(h.deps, { quietHours: { start: "22:00", end: "22:30" } }));
+      create(h, { dtstart: "2030-06-10T21:59:50", strength: "gentle" }); // next nag in 60 min
+      h.notifier.failNext(1);
+      await runAlarm(h);
+
+      await runNextAlarm(h); // 22:00:20, held
+      expect(await runNextAlarm(h)).toEqual(Temporal.Instant.from("2030-06-10T22:30:00Z"));
+      expect(h.notifier.sent.map((n) => n.attempt)).toEqual([1]);
     });
 
     it("skips a pending retry once the occurrence is acknowledged", async () => {
