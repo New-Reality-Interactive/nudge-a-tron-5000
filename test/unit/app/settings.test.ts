@@ -22,12 +22,15 @@ describe("settings", () => {
   });
 
   it.each([
-    [{ timezone: "Nowhere/Special" }],
-    [{ quietHours: { start: "24:00", end: "07:00" } }],
-    [{ quietHours: { start: "22:00", end: "7am" } }],
-  ])("rejects %j and changes nothing", (patch) => {
+    [{ timezone: "Nowhere/Special" }, "timezone"],
+    [{ quietHours: { start: "24:00", end: "07:00" } }, "quietHours"],
+    [{ quietHours: { start: "22:00", end: "7am" } }, "quietHours"],
+  ])("rejects %j and changes nothing", (patch, field) => {
     const h = harness();
-    expect(updateSettings(h.deps, patch)).toMatchObject({ ok: false, error: { code: "INVALID" } });
+    expect(updateSettings(h.deps, patch)).toMatchObject({
+      ok: false,
+      error: { code: "INVALID", field },
+    });
     expect(h.repo.settings).toBeNull();
   });
 });

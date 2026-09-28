@@ -1,7 +1,9 @@
 import { Temporal } from "temporal-polyfill";
+import type { PageRequest } from "../../app/pagination";
 import {
   DEFAULT_SETTINGS,
   type EventRecord,
+  type IdempotencyRecord,
   type Notification,
   type OutboxRow,
   type OutboxStatus,
@@ -71,6 +73,10 @@ const msOrNull = (instant: Temporal.Instant | null): number | null =>
 const instant = (value: number): Temporal.Instant => Temporal.Instant.fromEpochMilliseconds(value);
 const instantOrNull = (value: number | null): Temporal.Instant | null =>
   value === null ? null : instant(value);
+
+/** SQLite's LIMIT for "no limit". */
+const limitOf = (page?: PageRequest): number => page?.limit ?? -1;
+const afterOf = (page?: PageRequest): string | null => page?.after ?? null;
 
 const OCCURRENCE_COLUMNS =
   "id, reminder_id, scheduled_for, level, attempts, state, next_nag_at, closed_at, close_reason";
@@ -219,10 +225,18 @@ export class SqliteReminderRepo implements ReminderRepo {
     return row === undefined ? null : toReminder(row);
   }
 
-  listReminders(): ReminderRecord[] {
+  listReminders(page?: PageRequest): ReminderRecord[] {
+    const after = afterOf(page);
     return this.#sql
       .exec<ReminderRow>(
-        "SELECT * FROM reminders WHERE status != 'DELETED' ORDER BY created_at, rowid",
+        `SELECT * FROM reminders
+         WHERE status != 'DELETED'
+           AND (? IS NULL OR (created_at, rowid) > (
+             SELECT created_at, rowid FROM reminders WHERE id = ?))
+         ORDER BY created_at, rowid LIMIT ?`,
+        after,
+        after,
+        limitOf(page),
       )
       .toArray()
       .map(toReminder);
@@ -315,12 +329,20 @@ export class SqliteReminderRepo implements ReminderRepo {
       .map((row) => toOccurrence(row) as OpenOccurrence);
   }
 
-  listOccurrences(reminderId: string): Occurrence[] {
+  listOccurrences(reminderId: string, page?: PageRequest): Occurrence[] {
+    const after = afterOf(page);
     return this.#sql
       .exec<OccurrenceRow>(
         `SELECT ${OCCURRENCE_COLUMNS} FROM occurrences
-         WHERE reminder_id = ? ORDER BY scheduled_for DESC, rowid DESC`,
+         WHERE reminder_id = ?
+           AND (? IS NULL OR (scheduled_for, rowid) < (
+             SELECT scheduled_for, rowid FROM occurrences WHERE id = ? AND reminder_id = ?))
+         ORDER BY scheduled_for DESC, rowid DESC LIMIT ?`,
         reminderId,
+        after,
+        after,
+        reminderId,
+        limitOf(page),
       )
       .toArray()
       .map(toOccurrence);
@@ -340,11 +362,20 @@ export class SqliteReminderRepo implements ReminderRepo {
     }
   }
 
-  listEvents(occurrenceId: string): EventRecord[] {
+  listEvents(occurrenceId: string, page?: PageRequest): EventRecord[] {
+    const after = afterOf(page);
     return this.#sql
       .exec<EventRow>(
-        "SELECT id, occurrence_id, type, at, data FROM events WHERE occurrence_id = ? ORDER BY rowid",
+        `SELECT id, occurrence_id, type, at, data FROM events
+         WHERE occurrence_id = ?
+           AND (? IS NULL OR rowid > (
+             SELECT rowid FROM events WHERE id = ? AND occurrence_id = ?))
+         ORDER BY rowid LIMIT ?`,
         occurrenceId,
+        after,
+        after,
+        occurrenceId,
+        limitOf(page),
       )
       .toArray()
       .map((row) => ({
@@ -411,5 +442,42 @@ export class SqliteReminderRepo implements ReminderRepo {
       )
       .one();
     return instantOrNull(row.at);
+  }
+
+  getIdempotency(key: string): IdempotencyRecord | null {
+    const row = this.#sql
+      .exec<{
+        key: string;
+        fingerprint: string;
+        result: string;
+        created_at: number;
+        expires_at: number;
+      }>("SELECT * FROM idempotency_keys WHERE key = ?", key)
+      .toArray()[0];
+    return row === undefined
+      ? null
+      : {
+          key: row.key,
+          fingerprint: row.fingerprint,
+          result: row.result,
+          createdAt: instant(row.created_at),
+          expiresAt: instant(row.expires_at),
+        };
+  }
+
+  saveIdempotency(record: IdempotencyRecord): void {
+    this.#sql.exec(
+      `INSERT INTO idempotency_keys (key, fingerprint, result, created_at, expires_at)
+       VALUES (?, ?, ?, ?, ?)`,
+      record.key,
+      record.fingerprint,
+      record.result,
+      ms(record.createdAt),
+      ms(record.expiresAt),
+    );
+  }
+
+  purgeIdempotency(now: Temporal.Instant): void {
+    this.#sql.exec("DELETE FROM idempotency_keys WHERE expires_at <= ?", ms(now));
   }
 }

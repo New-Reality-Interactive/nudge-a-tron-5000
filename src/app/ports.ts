@@ -9,6 +9,7 @@ import type {
   QuietHours,
   Reminder,
 } from "../domain/types";
+import type { PageRequest } from "./pagination";
 
 /** The only source of "now" for use cases. Production reads the system clock. */
 export interface Clock {
@@ -98,8 +99,8 @@ export interface ReminderRepo {
   insertReminder(reminder: ReminderRecord): void;
   updateReminder(reminder: ReminderRecord): void;
   getReminder(id: string): ReminderRecord | null;
-  /** Every reminder that isn't DELETED, oldest first. */
-  listReminders(): ReminderRecord[];
+  /** Reminders that aren't DELETED, oldest first; all of them without `page`. */
+  listReminders(page?: PageRequest): ReminderRecord[];
   /** ACTIVE reminders whose next occurrence is due at `now`. */
   dueReminders(now: Temporal.Instant): ReminderRecord[];
 
@@ -111,12 +112,12 @@ export interface ReminderRepo {
   latestClosedOccurrence(reminderId: string): ClosedOccurrence | null;
   /** Open occurrences whose next nag is due at `now`, earliest first. */
   dueOccurrences(now: Temporal.Instant): OpenOccurrence[];
-  /** Newest first. */
-  listOccurrences(reminderId: string): Occurrence[];
+  /** Newest first; all of them without `page`. */
+  listOccurrences(reminderId: string, page?: PageRequest): Occurrence[];
 
   appendEvents(events: readonly Event[]): void;
-  /** In the order they were appended. */
-  listEvents(occurrenceId: string): EventRecord[];
+  /** In the order they were appended; all of them without `page`. */
+  listEvents(occurrenceId: string, page?: PageRequest): EventRecord[];
 
   /** Does nothing when a row with the same id exists. */
   insertOutbox(row: OutboxRow): void;
@@ -126,6 +127,23 @@ export interface ReminderRepo {
 
   /** The earliest pending nag, occurrence or outbox retry, or null when nothing is pending. */
   nextWakeAt(): Temporal.Instant | null;
+
+  /** An unexpired idempotency record, or null. */
+  getIdempotency(key: string): IdempotencyRecord | null;
+  saveIdempotency(record: IdempotencyRecord): void;
+  /** Deletes every record that expired at or before `now`. */
+  purgeIdempotency(now: Temporal.Instant): void;
+}
+
+/** A stored result for an `Idempotency-Key` (ADR 0008). */
+export interface IdempotencyRecord {
+  key: string;
+  /** Hash of the request the key was first used with. */
+  fingerprint: string;
+  /** The JSON-encoded `AppResult` the request returned. */
+  result: string;
+  createdAt: Temporal.Instant;
+  expiresAt: Temporal.Instant;
 }
 
 /** What every use case needs. Delivery also needs a `Notifier`. */

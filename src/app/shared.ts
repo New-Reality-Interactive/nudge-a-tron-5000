@@ -1,3 +1,4 @@
+import { Temporal } from "temporal-polyfill";
 import type { TransitionResult } from "../domain/occurrence";
 import type { Event, EventDraft, Occurrence } from "../domain/types";
 import type { IdGenerator, ReminderRepo } from "./ports";
@@ -43,3 +44,17 @@ export function completeIfFinished(repo: ReminderRepo, reminderId: string): void
     repo.updateReminder({ ...reminder, status: "COMPLETED" });
   }
 }
+
+/** Whether `tz` is an IANA time zone that Temporal knows. */
+export function isTimeZone(tz: string): boolean {
+  try {
+    Temporal.Instant.fromEpochMilliseconds(0).toZonedDateTimeISO(tz);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Lowercase hex. */
+export const toHex = (bytes: Uint8Array): string =>
+  Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");

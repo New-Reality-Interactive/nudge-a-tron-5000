@@ -1,8 +1,10 @@
 import { Temporal } from "temporal-polyfill";
+import type { PageRequest } from "../../src/app/pagination";
 import {
   type Clock,
   DEFAULT_SETTINGS,
   type EventRecord,
+  type IdempotencyRecord,
   type IdGenerator,
   type Notification,
   type Notifier,
@@ -72,6 +74,25 @@ const due = (at: Temporal.Instant | null, now: Temporal.Instant): at is Temporal
   at !== null && cmp(at, now) <= 0;
 
 /**
+ * The page of `ordered` after the item with id `page.after`, keeping only items that pass
+ * `keep`. As in SQL, the cursor item itself needn't pass `keep`, and an unknown cursor
+ * gives an empty page.
+ */
+function paged<T extends { id: string }>(
+  ordered: readonly T[],
+  page: PageRequest | undefined,
+  keep: (item: T) => boolean = () => true,
+): T[] {
+  let rest = ordered;
+  if (page?.after != null) {
+    const i = ordered.findIndex((item) => item.id === page.after);
+    rest = i < 0 ? [] : ordered.slice(i + 1);
+  }
+  const kept = rest.filter(keep);
+  return page === undefined ? kept : kept.slice(0, page.limit);
+}
+
+/**
  * `ReminderRepo` in memory, for unit tests of the use cases. Mirrors the SQLite adapter's
  * semantics, including its orderings, JSON event data and outbox ON CONFLICT DO NOTHING.
  * Records are immutable values, so a transaction snapshots the maps and restores them
@@ -83,6 +104,7 @@ export class InMemoryReminderRepo implements ReminderRepo {
   occurrences = new Map<string, Occurrence>();
   events: EventRecord[] = [];
   outbox = new Map<string, OutboxRow>();
+  idempotency = new Map<string, IdempotencyRecord>();
 
   transaction<T>(fn: () => T): T {
     const snapshot = {
@@ -91,6 +113,7 @@ export class InMemoryReminderRepo implements ReminderRepo {
       occurrences: new Map(this.occurrences),
       events: [...this.events],
       outbox: new Map(this.outbox),
+      idempotency: new Map(this.idempotency),
     };
     try {
       return fn();
@@ -121,8 +144,8 @@ export class InMemoryReminderRepo implements ReminderRepo {
     return this.reminders.get(id) ?? null;
   }
 
-  listReminders(): ReminderRecord[] {
-    return [...this.reminders.values()].filter((r) => r.status !== "DELETED");
+  listReminders(page?: PageRequest): ReminderRecord[] {
+    return paged([...this.reminders.values()], page, (r) => r.status !== "DELETED");
   }
 
   dueReminders(now: Temporal.Instant): ReminderRecord[] {
@@ -171,8 +194,8 @@ export class InMemoryReminderRepo implements ReminderRepo {
     ).sort((a, b) => cmp(a.nextNagAt, b.nextNagAt));
   }
 
-  listOccurrences(reminderId: string): Occurrence[] {
-    return this.#byReminder(reminderId);
+  listOccurrences(reminderId: string, page?: PageRequest): Occurrence[] {
+    return paged(this.#byReminder(reminderId), page);
   }
 
   appendEvents(events: readonly Event[]): void {
@@ -187,8 +210,11 @@ export class InMemoryReminderRepo implements ReminderRepo {
     }
   }
 
-  listEvents(occurrenceId: string): EventRecord[] {
-    return this.events.filter((e) => e.occurrenceId === occurrenceId);
+  listEvents(occurrenceId: string, page?: PageRequest): EventRecord[] {
+    return paged(
+      this.events.filter((e) => e.occurrenceId === occurrenceId),
+      page,
+    );
   }
 
   insertOutbox(row: OutboxRow): void {
@@ -214,5 +240,20 @@ export class InMemoryReminderRepo implements ReminderRepo {
       ...[...this.outbox.values()].filter((r) => r.status === "PENDING").map((r) => r.nextTryAt),
     ].filter((at): at is Temporal.Instant => at !== null);
     return candidates.sort(cmp)[0] ?? null;
+  }
+
+  getIdempotency(key: string): IdempotencyRecord | null {
+    return this.idempotency.get(key) ?? null;
+  }
+
+  saveIdempotency(record: IdempotencyRecord): void {
+    if (this.idempotency.has(record.key)) throw new Error(`duplicate key ${record.key}`);
+    this.idempotency.set(record.key, record);
+  }
+
+  purgeIdempotency(now: Temporal.Instant): void {
+    for (const [key, record] of this.idempotency) {
+      if (cmp(record.expiresAt, now) <= 0) this.idempotency.delete(key);
+    }
   }
 }

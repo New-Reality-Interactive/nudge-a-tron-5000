@@ -1,20 +1,29 @@
 import { transition } from "../domain/occurrence";
 import { type AckDto, type EventDto, eventToDto, type OccurrenceDto, occurrenceToDto } from "./dto";
+import { type Page, type PageRequest, probe, toPage } from "./pagination";
 import type { UseCaseDeps } from "./ports";
 import { type AppResult, notFound, ok } from "./result";
 import { completeIfFinished, saveTransition, valid } from "./shared";
 
-/** A reminder's occurrences, newest first. */
-export function listOccurrences(deps: UseCaseDeps, reminderId: string): AppResult<OccurrenceDto[]> {
+/** A page of a reminder's occurrences, newest first. */
+export function listOccurrences(
+  deps: UseCaseDeps,
+  reminderId: string,
+  page: PageRequest,
+): AppResult<Page<OccurrenceDto>> {
   const reminder = deps.repo.getReminder(reminderId);
   if (reminder === null || reminder.status === "DELETED") return notFound("reminder");
-  return ok(deps.repo.listOccurrences(reminderId).map(occurrenceToDto));
+  return ok(toPage(deps.repo.listOccurrences(reminderId, probe(page)), page, occurrenceToDto));
 }
 
-/** An occurrence's audit events, oldest first. */
-export function listEvents(deps: UseCaseDeps, occurrenceId: string): AppResult<EventDto[]> {
+/** A page of an occurrence's audit events, oldest first. */
+export function listEvents(
+  deps: UseCaseDeps,
+  occurrenceId: string,
+  page: PageRequest,
+): AppResult<Page<EventDto>> {
   if (deps.repo.getOccurrence(occurrenceId) === null) return notFound("occurrence");
-  return ok(deps.repo.listEvents(occurrenceId).map(eventToDto));
+  return ok(toPage(deps.repo.listEvents(occurrenceId, probe(page)), page, eventToDto));
 }
 
 /**

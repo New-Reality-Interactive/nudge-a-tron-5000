@@ -1,8 +1,10 @@
-export type AppErrorCode = "NOT_FOUND" | "INVALID";
+export type AppErrorCode = "NOT_FOUND" | "INVALID" | "CONFLICT";
 
 export interface AppError {
   code: AppErrorCode;
   message: string;
+  /** The input field at fault, when there is one (e.g. `dtstart`). */
+  field?: string;
 }
 
 /**
@@ -18,7 +20,12 @@ export const notFound = (what: string): AppResult<never> => ({
   error: { code: "NOT_FOUND", message: `${what} not found` },
 });
 
-export const invalid = (message: string): AppResult<never> => ({
+export const invalid = (message: string, field?: string): AppResult<never> => ({
   ok: false,
-  error: { code: "INVALID", message },
+  error: { code: "INVALID", message, ...(field !== undefined ? { field } : {}) },
+});
+
+export const conflict = (message: string): AppResult<never> => ({
+  ok: false,
+  error: { code: "CONFLICT", message },
 });
