@@ -14,6 +14,8 @@ are in `docs/milestones/`. Update a milestone's Status and checklist in the PR t
 - `npm run lint` / `npm run format`: Biome check / Biome with `--write`
 - `npm test`: both Vitest projects. `npm run test:unit`, `npm run test:integration` run one each
 - `npm run coverage`: v8 coverage gate (unit project only)
+- `npm run openapi`: regenerate `openapi/v0.json` after any API change and review the diff.
+  CI fails if it's stale, and `oasdiff` fails a PR that breaks it (ADR 0007, ADR 0008)
 - `npm run cf-typegen`: run after any `wrangler.jsonc` change
 - `npm run dev`: local Worker on :8787, inspector on :9229
 

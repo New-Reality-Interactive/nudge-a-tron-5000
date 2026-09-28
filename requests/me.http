@@ -1,0 +1,28 @@
+# REST Client (humao.rest-client). Start the Worker with `npm run dev` first.
+# Get an API key from admin.http and paste it below.
+@baseUrl = http://localhost:8787/v0
+@apiKey = paste-an-nt5k_-key-from-admin.http
+
+### Who am I, and my time zone and quiet hours
+GET {{baseUrl}}/me
+Authorization: Bearer {{apiKey}}
+
+### Set quiet hours (a window crossing midnight is fine)
+PATCH {{baseUrl}}/me
+Authorization: Bearer {{apiKey}}
+Content-Type: application/json
+
+{
+  "timezone": "America/New_York",
+  "quietHours": { "start": "22:00", "end": "07:00" }
+}
+
+### Turn quiet hours off
+PATCH {{baseUrl}}/me
+Authorization: Bearer {{apiKey}}
+Content-Type: application/json
+
+{ "quietHours": null }
+
+### The v0 OpenAPI document (no key needed)
+GET {{baseUrl}}/openapi.json
