@@ -18,7 +18,9 @@
     "test": "vitest run --project unit --project integration",
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
-    "coverage": "vitest run --project unit --coverage"
+    "coverage": "vitest run --project unit --coverage",
+    "openapi": "vitest run --project unit test/unit/http/v0/openapi.test.ts --update",
+    "openapi:check": "vitest run --project unit test/unit/http/v0/openapi.test.ts --update=none"
   },
   "dependencies": {
     "@hono/zod-openapi": "^1.6.3",
