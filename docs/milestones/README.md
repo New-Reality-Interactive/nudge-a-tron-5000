@@ -10,7 +10,8 @@ The MVP is delivered in milestones. Each has its own spec here, and each is buil
 | 4 | HTTP API + auth | ✅ Done (`v0.4.0`) | [04-http-api-auth.md](04-http-api-auth.md) |
 | 5 | Ack flow + ntfy adapter | Not started | [05-ack-flow-ntfy.md](05-ack-flow-ntfy.md) |
 | 6 | Hardening | Not started | [06-hardening.md](06-hardening.md) |
-| 7 | Later (post-MVP backlog) | Not planned | [07-later.md](07-later.md) |
+| 7 | Swagger UI | Not started | [07-swagger-ui.md](07-swagger-ui.md) |
+| 8 | Later (post-MVP backlog) | Not planned | [08-later.md](08-later.md) |
 
 Milestones depend on each other in order. Don't start one until the previous one is merged.
 
