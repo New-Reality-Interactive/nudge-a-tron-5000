@@ -59,7 +59,7 @@ Moving from `v0` to `v1` is itself a major version, handled the same way: `/v1` 
 
 ## Consequences
 
-- Release tagging is mechanical: the session tags every milestone merge and every merge that deployed, and watches the production deploy. Production always matches the latest deployable `main`.
+- Release tagging is mechanical: the session tags every milestone merge and every merge that deployed, and watches the production deploy. A milestone tag waits for the owner's go-ahead after the staging checks; a patch tag follows its staging deploy straight away. Production always matches the latest deployable `main` once released.
 - Breaking API changes cost a second set of routes and schemas, and some time running two versions, so they'll be rare. Add-only design becomes the default.
 - Because the migration rule is add-only, the schema accumulates old columns until the version that last read them is removed.
 - M4 builds the API at `/v0`, not `/v1`, and serves its OpenAPI document per version. Whether CI should also detect breaking OpenAPI changes (for example with `oasdiff`) is an open question for the M4 plan.

@@ -23,8 +23,9 @@ Milestones depend on each other in order. Don't start one until the previous one
 5. **Review the code.** The session ends its report by asking whether to run `/code-review`. Say yes, and it runs the review and fixes what it finds.
 6. **Say "push".** The session pushes, opens a PR following the template, watches `verify`, and gives you the URL.
 7. **Review and merge** in the GitHub UI. Merging to `main` deploys to staging unless only docs, tests or config changed.
-8. **Do the post-merge checks** listed in the spec, such as a staging smoke test or checking a migration ran.
-9. **Tell the session it's merged.** It cleans up the branch, waits for the staging deploy, then tags the merge commit `v0.N.0` (milestone N) and pushes the tag. That deploys to production after CI passes, and the session reports the result. Other merged PRs that deployed to staging are released the same way as a patch (`v0.N.1`, `v0.N.2`, …); docs- and tests-only PRs aren't tagged. See [ADR 0007](../adr/0007-versioning-and-compatibility.md).
+8. **Tell the session it's merged.** It cleans up the branch, waits for the staging deploy and reports the result, then **stops**. Nothing goes to production yet.
+9. **Do the post-merge checks** listed in the spec on staging, such as a smoke test or checking a migration ran.
+10. **Give the go-ahead** once they pass. The session tags the merge commit `v0.N.0` (milestone N) and pushes the tag, which deploys to production after CI passes, and reports the result. Other merged PRs that deployed to staging are released as a patch (`v0.N.1`, `v0.N.2`, …) straight after their staging deploy, without waiting; docs- and tests-only PRs aren't tagged. See [ADR 0007](../adr/0007-versioning-and-compatibility.md).
 
 Each PR also updates its own spec. It changes the **Status** line, ticks the acceptance criteria, and updates the table above. The docs then show what has actually shipped.
 
