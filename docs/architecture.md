@@ -74,10 +74,10 @@ Greenfield service for **nagging reminders**: a reminder fires on a (possibly re
 - `GET /v0/reminders/{id}/occurrences`, `GET /v0/occurrences/{id}/events`
 - `POST /v0/occurrences/{id}/ack` (for API clients)
 - `GET /v0/me`, `PATCH /v0/me` (timezone, quiet hours)
-- Admin (admin key): `POST /v0/admin/users`, `POST/DELETE /v0/admin/users/{id}/keys`
+- Admin (admin key): `POST /v0/admin/users`, `POST /v0/admin/users/{id}/keys`, `DELETE /v0/admin/users/{id}/keys/{keyId}`
 - Public ack: `GET /a/{token}` shows a confirm page (safe against link prefetchers). `POST /a/{token}` performs the ack, and the ntfy `http` action button POSTs directly. Both are idempotent.
 - The URI's major version matches the release's major version. Changes within a major version stay backwards compatible, and at most two major versions are served at once ([ADR 0007](adr/0007-versioning-and-compatibility.md)).
-- Errors use RFC 9457 `application/problem+json`. Mutating POSTs accept an `Idempotency-Key` header.
+- Errors use RFC 9457 `application/problem+json`. Mutating POSTs accept an `Idempotency-Key` header. Key format, error types, validation limits, idempotency and pagination are in [ADR 0008](adr/0008-http-api-conventions.md).
 
 ## Security
 - **API keys**: `nt5k_<keyId>_<secret>`. Only `SHA-256(secret)` is stored (the secret is high-entropy, so a fast hash is fine), and it's compared in constant time. Keys are revocable per key.

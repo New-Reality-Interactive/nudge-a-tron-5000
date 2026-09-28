@@ -1,0 +1,2043 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Nudge-A-Tron 5000 API",
+    "version": "0",
+    "description": "Nagging reminders: a reminder fires on a schedule and keeps nagging, more insistently each time, until it's acknowledged.\n\nWithin v0 the API only grows: clients must ignore response fields and enum values they don't know. Errors are RFC 9457 problem details (`application/problem+json`)."
+  },
+  "servers": [
+    {
+      "url": "/v0"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Reminders"
+    },
+    {
+      "name": "Occurrences"
+    },
+    {
+      "name": "Me"
+    },
+    {
+      "name": "Admin",
+      "description": "Needs the admin key."
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "A user API key, `nt5k_<keyId>_<secret>`."
+      },
+      "adminKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "The `ADMIN_API_KEY` Worker secret."
+      }
+    },
+    "schemas": {
+      "Reminder": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dtstart": {
+            "type": "string",
+            "example": "2030-06-10T09:00:00"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "rrule": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "strength": {
+            "$ref": "#/components/schemas/Strength"
+          },
+          "cap": {
+            "$ref": "#/components/schemas/Cap"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "COMPLETED"
+            ]
+          },
+          "nextOccurrenceAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2030-06-10T13:00:00Z"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2030-06-10T13:00:00Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2030-06-10T13:00:00Z"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "body",
+          "dtstart",
+          "timezone",
+          "rrule",
+          "strength",
+          "cap",
+          "status",
+          "nextOccurrenceAt",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "Strength": {
+        "type": "string",
+        "enum": [
+          "gentle",
+          "firm",
+          "relentless"
+        ],
+        "description": "How insistently a reminder nags (see ADR 0005)."
+      },
+      "Cap": {
+        "type": "object",
+        "properties": {
+          "maxDurationMinutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10080
+          },
+          "maxAttempts": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "additionalProperties": false,
+        "description": "When an unanswered occurrence gives up. Unset fields use the system default (24 h, 20 attempts)."
+      },
+      "Problem": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "/problems/validation-failed"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "instance": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "message"
+              ]
+            },
+            "description": "For validation-failed: each invalid input."
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "status"
+        ],
+        "description": "RFC 9457 problem details."
+      },
+      "ReminderCreate": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "\\S",
+            "example": "Take the bins out"
+          },
+          "body": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          },
+          "dtstart": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2})?$",
+            "description": "Local wall-clock time in `timezone`. It must exist there (not in a DST gap).",
+            "example": "2030-06-10T09:00"
+          },
+          "timezone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "An IANA time zone name, exactly as listed (not an offset such as +05:00).",
+            "example": "America/New_York"
+          },
+          "rrule": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500,
+            "description": "RFC 5545 RRULE without the `RRULE:` prefix. FREQ may not be SECONDLY; BYSECOND takes one value; COUNT and INTERVAL are 1–1000; at most 500 characters. Occurrences are always at least a minute apart.",
+            "example": "FREQ=WEEKLY;BYDAY=MO,WE,FR"
+          },
+          "strength": {
+            "$ref": "#/components/schemas/Strength"
+          },
+          "cap": {
+            "$ref": "#/components/schemas/Cap"
+          }
+        },
+        "required": [
+          "title",
+          "dtstart",
+          "timezone",
+          "strength"
+        ],
+        "additionalProperties": false
+      },
+      "ReminderPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Reminder"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `cursor` for the next page; null on the last page."
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ]
+      },
+      "ReminderPatch": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "\\S",
+            "example": "Take the bins out"
+          },
+          "body": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          },
+          "dtstart": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2})?$",
+            "description": "Local wall-clock time in `timezone`. It must exist there (not in a DST gap).",
+            "example": "2030-06-10T09:00"
+          },
+          "timezone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "An IANA time zone name, exactly as listed (not an offset such as +05:00).",
+            "example": "America/New_York"
+          },
+          "rrule": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500,
+            "description": "RFC 5545 RRULE without the `RRULE:` prefix. FREQ may not be SECONDLY; BYSECOND takes one value; COUNT and INTERVAL are 1–1000; at most 500 characters. Occurrences are always at least a minute apart.",
+            "example": "FREQ=WEEKLY;BYDAY=MO,WE,FR"
+          },
+          "strength": {
+            "$ref": "#/components/schemas/Strength"
+          },
+          "cap": {
+            "$ref": "#/components/schemas/Cap"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Only the fields sent change. `body: null` and `rrule: null` clear them; `cap` is replaced as a whole."
+      },
+      "OccurrencePage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Occurrence"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `cursor` for the next page; null on the last page."
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ]
+      },
+      "Occurrence": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "reminderId": {
+            "type": "string"
+          },
+          "scheduledFor": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2030-06-10T13:00:00Z"
+          },
+          "level": {
+            "type": "integer"
+          },
+          "attempts": {
+            "type": "integer"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "NAGGING",
+              "ACKED",
+              "MISSED",
+              "CANCELLED"
+            ]
+          },
+          "nextNagAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2030-06-10T13:00:00Z"
+          },
+          "closedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2030-06-10T13:00:00Z"
+          },
+          "closeReason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "cap",
+              "superseded",
+              null
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "reminderId",
+          "scheduledFor",
+          "level",
+          "attempts",
+          "state",
+          "nextNagAt",
+          "closedAt",
+          "closeReason"
+        ]
+      },
+      "EventPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Event"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `cursor` for the next page; null on the last page."
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ]
+      },
+      "Event": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/EventSCHEDULED"
+          },
+          {
+            "$ref": "#/components/schemas/EventNAG_SENT"
+          },
+          {
+            "$ref": "#/components/schemas/EventSEND_FAILED"
+          },
+          {
+            "$ref": "#/components/schemas/EventDEFERRED_QUIET"
+          },
+          {
+            "$ref": "#/components/schemas/EventACKED"
+          },
+          {
+            "$ref": "#/components/schemas/EventMISSED"
+          },
+          {
+            "$ref": "#/components/schemas/EventSUPERSEDED"
+          },
+          {
+            "$ref": "#/components/schemas/EventCANCELLED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "SCHEDULED": "#/components/schemas/EventSCHEDULED",
+            "NAG_SENT": "#/components/schemas/EventNAG_SENT",
+            "SEND_FAILED": "#/components/schemas/EventSEND_FAILED",
+            "DEFERRED_QUIET": "#/components/schemas/EventDEFERRED_QUIET",
+            "ACKED": "#/components/schemas/EventACKED",
+            "MISSED": "#/components/schemas/EventMISSED",
+            "SUPERSEDED": "#/components/schemas/EventSUPERSEDED",
+            "CANCELLED": "#/components/schemas/EventCANCELLED"
+          }
+        }
+      },
+      "EventSCHEDULED": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "occurrenceId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "SCHEDULED"
+            ]
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2030-06-10T13:00:00Z"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "level": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "level"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "occurrenceId",
+          "type",
+          "at",
+          "data"
+        ],
+        "description": "The occurrence was created."
+      },
+      "EventNAG_SENT": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "occurrenceId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "NAG_SENT"
+            ]
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2030-06-10T13:00:00Z"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "attempt": {
+                "type": "integer"
+              },
+              "level": {
+                "type": "integer"
+              },
+              "priority": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "attempt",
+              "level",
+              "priority"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "occurrenceId",
+          "type",
+          "at",
+          "data"
+        ],
+        "description": "A nag was queued for delivery."
+      },
+      "EventSEND_FAILED": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "occurrenceId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "SEND_FAILED"
+            ]
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2030-06-10T13:00:00Z"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "attempt": {
+                "type": "integer"
+              },
+              "tries": {
+                "type": "integer"
+              },
+              "nextTryAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "example": "2030-06-10T13:00:00Z"
+              }
+            },
+            "required": [
+              "attempt",
+              "tries",
+              "nextTryAt"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "occurrenceId",
+          "type",
+          "at",
+          "data"
+        ],
+        "description": "Delivering a nag failed. `nextTryAt` is null once delivery gives up."
+      },
+      "EventDEFERRED_QUIET": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "occurrenceId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "DEFERRED_QUIET"
+            ]
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2030-06-10T13:00:00Z"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "until": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2030-06-10T13:00:00Z"
+              }
+            },
+            "required": [
+              "until"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "occurrenceId",
+          "type",
+          "at",
+          "data"
+        ],
+        "description": "A nag was deferred to the end of quiet hours."
+      },
+      "EventACKED": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "occurrenceId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "ACKED"
+            ]
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2030-06-10T13:00:00Z"
+          },
+          "data": {
+            "type": "object",
+            "properties": {}
+          }
+        },
+        "required": [
+          "id",
+          "occurrenceId",
+          "type",
+          "at",
+          "data"
+        ],
+        "description": "The occurrence was acknowledged."
+      },
+      "EventMISSED": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "occurrenceId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "MISSED"
+            ]
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2030-06-10T13:00:00Z"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "reason": {
+                "type": "string",
+                "enum": [
+                  "cap"
+                ]
+              }
+            },
+            "required": [
+              "reason"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "occurrenceId",
+          "type",
+          "at",
+          "data"
+        ],
+        "description": "The occurrence gave up unanswered."
+      },
+      "EventSUPERSEDED": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "occurrenceId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "SUPERSEDED"
+            ]
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2030-06-10T13:00:00Z"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "by": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "by"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "occurrenceId",
+          "type",
+          "at",
+          "data"
+        ],
+        "description": "The next occurrence replaced this unanswered one."
+      },
+      "EventCANCELLED": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "occurrenceId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "CANCELLED"
+            ]
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2030-06-10T13:00:00Z"
+          },
+          "data": {
+            "type": "object",
+            "properties": {}
+          }
+        },
+        "required": [
+          "id",
+          "occurrenceId",
+          "type",
+          "at",
+          "data"
+        ],
+        "description": "The reminder was deleted."
+      },
+      "Ack": {
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "acked",
+              "already_closed"
+            ]
+          },
+          "occurrence": {
+            "$ref": "#/components/schemas/Occurrence"
+          }
+        },
+        "required": [
+          "outcome",
+          "occurrence"
+        ]
+      },
+      "Me": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "quietHours": {
+            "$ref": "#/components/schemas/QuietHours"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "timezone",
+          "quietHours"
+        ]
+      },
+      "QuietHours": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "start": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+            "example": "22:00"
+          },
+          "end": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+            "example": "22:00"
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ],
+        "additionalProperties": false,
+        "description": "A daily window in the user's time zone, [start, end). start > end crosses midnight."
+      },
+      "MePatch": {
+        "type": "object",
+        "properties": {
+          "timezone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "An IANA time zone name, exactly as listed (not an offset such as +05:00).",
+            "example": "America/New_York"
+          },
+          "quietHours": {
+            "$ref": "#/components/schemas/QuietHours"
+          }
+        },
+        "additionalProperties": false,
+        "description": "`quietHours: null` turns quiet hours off."
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2030-06-10T13:00:00Z"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "timezone",
+          "createdAt"
+        ]
+      },
+      "UserCreate": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "pattern": "\\S"
+          },
+          "timezone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "An IANA time zone name, exactly as listed (not an offset such as +05:00).",
+            "example": "America/New_York"
+          }
+        },
+        "required": [
+          "name",
+          "timezone"
+        ],
+        "additionalProperties": false
+      },
+      "IssuedKey": {
+        "type": "object",
+        "properties": {
+          "keyId": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string",
+            "description": "The full API key. It's shown only in this response and can't be retrieved.",
+            "example": "nt5k_abcdefghijklmnop_…"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2030-06-10T13:00:00Z"
+          }
+        },
+        "required": [
+          "keyId",
+          "key",
+          "userId",
+          "createdAt"
+        ]
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/reminders": {
+      "post": {
+        "tags": [
+          "Reminders"
+        ],
+        "summary": "Create a reminder",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255,
+              "pattern": "^[\\x20-\\x7e]+$",
+              "description": "Retrying with the same key and body returns the first response for 24 hours; the same key with a different request gets 409."
+            },
+            "required": false,
+            "description": "Retrying with the same key and body returns the first response for 24 hours; the same key with a different request gets 409.",
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReminderCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new reminder",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Reminder"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (`/problems/validation-failed`), with each invalid field in `errors`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid key (`/problems/unauthorized`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Idempotency-Key reused with a different request (`/problems/idempotency-conflict`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error (`/problems/internal`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Reminders"
+        ],
+        "summary": "List reminders, oldest first",
+        "description": "Deleted reminders aren't listed.",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50,
+              "example": 50
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "description": "`nextCursor` from the previous page."
+            },
+            "required": false,
+            "description": "`nextCursor` from the previous page.",
+            "name": "cursor",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of reminders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (`/problems/validation-failed`), with each invalid field in `errors`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid key (`/problems/unauthorized`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error (`/problems/internal`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reminders/{id}": {
+      "get": {
+        "tags": [
+          "Reminders"
+        ],
+        "summary": "Get a reminder",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The reminder",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Reminder"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (`/problems/validation-failed`), with each invalid field in `errors`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid key (`/problems/unauthorized`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (`/problems/not-found`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error (`/problems/internal`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Reminders"
+        ],
+        "summary": "Change a reminder",
+        "description": "A schedule change (dtstart, timezone or rrule) moves the next occurrence to the new schedule. An open occurrence keeps nagging; strength and cap apply from its next nag.",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReminderPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The changed reminder",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Reminder"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (`/problems/validation-failed`), with each invalid field in `errors`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid key (`/problems/unauthorized`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (`/problems/not-found`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error (`/problems/internal`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Reminders"
+        ],
+        "summary": "Delete a reminder",
+        "description": "Stops the reminder: it gets no more occurrences, and its open occurrence is cancelled. Its occurrences and their events stay readable by id.",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "400": {
+            "description": "Invalid input (`/problems/validation-failed`), with each invalid field in `errors`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid key (`/problems/unauthorized`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (`/problems/not-found`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error (`/problems/internal`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reminders/{id}/occurrences": {
+      "get": {
+        "tags": [
+          "Occurrences"
+        ],
+        "summary": "List a reminder's occurrences, newest first",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50,
+              "example": 50
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "description": "`nextCursor` from the previous page."
+            },
+            "required": false,
+            "description": "`nextCursor` from the previous page.",
+            "name": "cursor",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of occurrences",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OccurrencePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (`/problems/validation-failed`), with each invalid field in `errors`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid key (`/problems/unauthorized`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (`/problems/not-found`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error (`/problems/internal`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/occurrences/{id}/events": {
+      "get": {
+        "tags": [
+          "Occurrences"
+        ],
+        "summary": "List an occurrence's audit events, oldest first",
+        "description": "Clients must ignore event types they don't know.",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50,
+              "example": 50
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "description": "`nextCursor` from the previous page."
+            },
+            "required": false,
+            "description": "`nextCursor` from the previous page.",
+            "name": "cursor",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (`/problems/validation-failed`), with each invalid field in `errors`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid key (`/problems/unauthorized`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (`/problems/not-found`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error (`/problems/internal`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/occurrences/{id}/ack": {
+      "post": {
+        "tags": [
+          "Occurrences"
+        ],
+        "summary": "Acknowledge an occurrence",
+        "description": "Stops its nags. Acknowledging an occurrence that's already closed changes nothing and answers `already_closed`.",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255,
+              "pattern": "^[\\x20-\\x7e]+$",
+              "description": "Retrying with the same key and body returns the first response for 24 hours; the same key with a different request gets 409."
+            },
+            "required": false,
+            "description": "Retrying with the same key and body returns the first response for 24 hours; the same key with a different request gets 409.",
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The outcome and the occurrence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ack"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (`/problems/validation-failed`), with each invalid field in `errors`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid key (`/problems/unauthorized`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (`/problems/not-found`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Idempotency-Key reused with a different request (`/problems/idempotency-conflict`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error (`/problems/internal`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me": {
+      "get": {
+        "tags": [
+          "Me"
+        ],
+        "summary": "Get your profile and settings",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "You",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid key (`/problems/unauthorized`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error (`/problems/internal`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Me"
+        ],
+        "summary": "Change your time zone or quiet hours",
+        "description": "Takes effect from the next due nag; nags already scheduled don't move.",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MePatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "You, changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (`/problems/validation-failed`), with each invalid field in `errors`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid key (`/problems/unauthorized`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error (`/problems/internal`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/users": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Create a user",
+        "description": "Doesn't take an Idempotency-Key: a retry after a timeout can create a second user.",
+        "security": [
+          {
+            "adminKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (`/problems/validation-failed`), with each invalid field in `errors`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid key (`/problems/unauthorized`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A user key on an admin route (`/problems/forbidden`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error (`/problems/internal`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/users/{userId}/keys": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Issue an API key",
+        "description": "The full key is in this response only; just a hash of it is stored. Doesn't take an Idempotency-Key, since replaying would need the key stored: revoke any extra key instead.",
+        "security": [
+          {
+            "adminKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": true,
+            "name": "userId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The new key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssuedKey"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (`/problems/validation-failed`), with each invalid field in `errors`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid key (`/problems/unauthorized`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A user key on an admin route (`/problems/forbidden`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (`/problems/not-found`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error (`/problems/internal`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/users/{userId}/keys/{keyId}": {
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Revoke an API key",
+        "description": "Revoking a key that's already revoked succeeds.",
+        "security": [
+          {
+            "adminKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": true,
+            "name": "userId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": true,
+            "name": "keyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Revoked"
+          },
+          "400": {
+            "description": "Invalid input (`/problems/validation-failed`), with each invalid field in `errors`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid key (`/problems/unauthorized`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A user key on an admin route (`/problems/forbidden`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (`/problems/not-found`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error (`/problems/internal`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {}
+}

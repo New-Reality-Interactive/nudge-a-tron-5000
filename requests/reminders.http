@@ -1,0 +1,68 @@
+# REST Client (humao.rest-client). Start the Worker with `npm run dev` first.
+# Get an API key from admin.http and paste it below.
+@baseUrl = http://localhost:8787/v0
+@apiKey = paste-an-nt5k_-key-from-admin.http
+
+### Create a reminder. Send it twice with the same Idempotency-Key: one reminder, same response.
+# @name createReminder
+POST {{baseUrl}}/reminders
+Authorization: Bearer {{apiKey}}
+Content-Type: application/json
+Idempotency-Key: {{$guid}}
+
+{
+  "title": "Take the bins out",
+  "dtstart": "2030-06-10T19:00",
+  "timezone": "America/New_York",
+  "rrule": "FREQ=WEEKLY;BYDAY=MO",
+  "strength": "firm",
+  "cap": { "maxAttempts": 10 }
+}
+
+### List reminders (paged: pass nextCursor as ?cursor=)
+GET {{baseUrl}}/reminders?limit=20
+Authorization: Bearer {{apiKey}}
+
+### Get one
+GET {{baseUrl}}/reminders/{{createReminder.response.body.id}}
+Authorization: Bearer {{apiKey}}
+
+### Change it. Only the fields sent change; "body": null clears the body.
+PATCH {{baseUrl}}/reminders/{{createReminder.response.body.id}}
+Authorization: Bearer {{apiKey}}
+Content-Type: application/json
+
+{
+  "title": "Bins and recycling",
+  "strength": "relentless"
+}
+
+### Its occurrences, newest first
+# @name occurrences
+GET {{baseUrl}}/reminders/{{createReminder.response.body.id}}/occurrences
+Authorization: Bearer {{apiKey}}
+
+### An occurrence's audit events (needs an occurrence: create a reminder due in a minute)
+GET {{baseUrl}}/occurrences/{{occurrences.response.body.items[0].id}}/events
+Authorization: Bearer {{apiKey}}
+
+### Acknowledge an occurrence, which stops its nags
+POST {{baseUrl}}/occurrences/{{occurrences.response.body.items[0].id}}/ack
+Authorization: Bearer {{apiKey}}
+
+### Delete the reminder: no more occurrences, and an open one is cancelled
+DELETE {{baseUrl}}/reminders/{{createReminder.response.body.id}}
+Authorization: Bearer {{apiKey}}
+
+### Validation errors come back as application/problem+json listing each field
+POST {{baseUrl}}/reminders
+Authorization: Bearer {{apiKey}}
+Content-Type: application/json
+
+{
+  "title": "",
+  "dtstart": "2030-03-10T02:30",
+  "timezone": "America/New_York",
+  "rrule": "FREQ=SECONDLY",
+  "strength": "brutal"
+}

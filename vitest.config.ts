@@ -1,4 +1,4 @@
-import { cloudflareTest } from "@cloudflare/vitest-pool-workers";
+import { cloudflareTest, readD1Migrations } from "@cloudflare/vitest-pool-workers";
 import { defineConfig, type Plugin } from "vitest/config";
 
 /** Loads `.sql` as a string in Node, as Wrangler's default Text module rule does in workerd. */
@@ -35,14 +35,30 @@ export default defineConfig({
         test: {
           name: "unit",
           environment: "node",
+          // The fast-check properties are CPU-bound. Run in parallel with the other
+          // projects, or under v8 coverage on CI runners, some take longer than 5 s.
+          testTimeout: 30_000,
           include: ["test/unit/**/*.test.ts"],
         },
       },
       {
-        plugins: [cloudflareTest({ wrangler: { configPath: "./wrangler.jsonc" } })],
+        plugins: [
+          cloudflareTest(async () => ({
+            wrangler: { configPath: "./wrangler.jsonc" },
+            miniflare: {
+              bindings: {
+                // Applied to the local D1 by test/integration/setup.ts.
+                TEST_MIGRATIONS: await readD1Migrations("./migrations/d1"),
+                ADMIN_API_KEY: "test-admin-key",
+                ACK_SIGNING_KEY: "test-ack-signing-key",
+              },
+            },
+          })),
+        ],
         test: {
           name: "integration",
           include: ["test/integration/**/*.test.ts"],
+          setupFiles: ["./test/integration/setup.ts"],
         },
       },
     ],

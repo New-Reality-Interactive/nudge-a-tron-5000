@@ -3,17 +3,9 @@ import type { QuietHours } from "../domain/types";
 import { type SettingsDto, type SettingsPatch, settingsToDto } from "./dto";
 import type { UseCaseDeps } from "./ports";
 import { type AppResult, invalid, ok } from "./result";
+import { isTimeZone } from "./shared";
 
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
-
-function isTimeZone(tz: string): boolean {
-  try {
-    Temporal.Instant.fromEpochMilliseconds(0).toZonedDateTimeISO(tz);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 export function getSettings(deps: UseCaseDeps): SettingsDto {
   return settingsToDto(deps.repo.getSettings());
@@ -29,7 +21,7 @@ export function updateSettings(deps: UseCaseDeps, patch: SettingsPatch): AppResu
     const current = repo.getSettings();
 
     const timezone = patch.timezone ?? current.timezone;
-    if (!isTimeZone(timezone)) return invalid(`unknown time zone: ${timezone}`);
+    if (!isTimeZone(timezone)) return invalid(`unknown time zone: ${timezone}`, "timezone");
 
     let quietHours: QuietHours | null = current.quietHours;
     if (patch.quietHours !== undefined) {
@@ -37,7 +29,8 @@ export function updateSettings(deps: UseCaseDeps, patch: SettingsPatch): AppResu
         quietHours = null;
       } else {
         const { start, end } = patch.quietHours;
-        if (!HHMM.test(start) || !HHMM.test(end)) return invalid("quiet hours must be HH:MM");
+        if (!HHMM.test(start) || !HHMM.test(end))
+          return invalid("quiet hours must be HH:MM", "quietHours");
         quietHours = { start: Temporal.PlainTime.from(start), end: Temporal.PlainTime.from(end) };
       }
     }

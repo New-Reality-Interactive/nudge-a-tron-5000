@@ -18,16 +18,21 @@
     "test": "vitest run --project unit --project integration",
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
-    "coverage": "vitest run --project unit --coverage"
+    "coverage": "vitest run --project unit --coverage",
+    "openapi": "vitest run --project unit test/unit/http/v0/openapi.test.ts --update",
+    "openapi:check": "vitest run --project unit test/unit/http/v0/openapi.test.ts --update=none"
   },
   "dependencies": {
+    "@hono/zod-openapi": "^1.6.3",
     "hono": "^4.13.9",
     "rrule-temporal": "^2.2.7",
-    "temporal-polyfill": "^1.0.5"
+    "temporal-polyfill": "^1.0.5",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.14",
     "@cloudflare/vitest-pool-workers": "^0.22.0",
+    "@seriousme/openapi-schema-validator": "^2.11.0",
     "@types/node": "^24.19.0",
     "@vitest/coverage-v8": "^4.1.11",
     "fast-check": "^4.10.2",

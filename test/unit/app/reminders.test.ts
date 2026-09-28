@@ -7,7 +7,7 @@ import {
   listReminders,
   updateReminder,
 } from "../../../src/app/reminders";
-import { create, eventTypes, harness, reminderInput, runAlarm, T0, value } from "./harness";
+import { ALL, create, eventTypes, harness, reminderInput, runAlarm, T0, value } from "./harness";
 
 describe("createReminder", () => {
   it("stores the reminder with its first occurrence at or after now", () => {
@@ -43,13 +43,32 @@ describe("createReminder", () => {
 
   it.each([
     ["dtstart", { dtstart: "not a date" }],
-    ["time zone", { timezone: "Mars/Olympus_Mons" }],
+    ["timezone", { timezone: "Mars/Olympus_Mons" }],
     ["rrule", { rrule: "FREQ=SOMETIMES" }],
-  ])("rejects an invalid %s", (_, overrides) => {
+    ["rrule", { rrule: "FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=30" }],
+  ])("rejects an invalid %s", (field, overrides) => {
     const h = harness();
     const result = createReminder(h.deps, reminderInput(overrides));
-    expect(result).toMatchObject({ ok: false, error: { code: "INVALID" } });
+    expect(result).toMatchObject({ ok: false, error: { code: "INVALID", field } });
     expect(h.repo.reminders.size).toBe(0);
+  });
+
+  it("rejects a dtstart that falls in a DST gap", () => {
+    const h = harness();
+    const result = createReminder(
+      h.deps,
+      reminderInput({ dtstart: "2030-03-10T02:30", timezone: "America/New_York" }),
+    );
+    expect(result).toMatchObject({
+      ok: false,
+      error: { code: "INVALID", field: "dtstart", message: expect.stringMatching(/gap/) },
+    });
+  });
+
+  it("accepts a dtstart in a repeated hour", () => {
+    const h = harness();
+    const r = create(h, { dtstart: "2030-11-03T01:30", timezone: "America/New_York" });
+    expect(r.dtstart).toBe("2030-11-03T01:30:00");
   });
 });
 
@@ -60,7 +79,7 @@ describe("getReminder and listReminders", () => {
     const b = create(h, { title: "b" });
     value(deleteReminder(h.deps, a.id));
 
-    expect(listReminders(h.deps).map((r) => r.title)).toEqual(["b"]);
+    expect(listReminders(h.deps, ALL).items.map((r) => r.title)).toEqual(["b"]);
     expect(value(getReminder(h.deps, b.id)).title).toBe("b");
     expect(getReminder(h.deps, a.id)).toMatchObject({ ok: false, error: { code: "NOT_FOUND" } });
     expect(getReminder(h.deps, "nope")).toMatchObject({ ok: false, error: { code: "NOT_FOUND" } });
@@ -68,6 +87,14 @@ describe("getReminder and listReminders", () => {
 });
 
 describe("updateReminder", () => {
+  it("rejects a time zone change that puts the stored dtstart in a DST gap", () => {
+    const h = harness();
+    const r = create(h, { dtstart: "2030-03-10T02:30", rrule: "FREQ=DAILY" });
+    const result = updateReminder(h.deps, r.id, { timezone: "America/New_York" });
+    expect(result).toMatchObject({ ok: false, error: { code: "INVALID", field: "dtstart" } });
+    expect(value(getReminder(h.deps, r.id))).toEqual(r);
+  });
+
   it("changes only the fields given, and clears the body with null", () => {
     const h = harness();
     const r = create(h, { body: "Green bin", cap: { maxAttempts: 5 } });
@@ -203,12 +230,12 @@ describe("occurrence queries and acknowledge", () => {
     h.clock.advance({ hours: 24 });
     await runAlarm(h);
 
-    const occs = value(listOccurrences(h.deps, r.id));
+    const occs = value(listOccurrences(h.deps, r.id, ALL)).items;
     expect(occs.map((o) => [o.scheduledFor, o.state])).toEqual([
       ["2030-06-11T09:00:00Z", "NAGGING"],
       ["2030-06-10T09:00:00Z", "MISSED"],
     ]);
-    const events = value(listEvents(h.deps, occs[1]?.id as string));
+    const events = value(listEvents(h.deps, occs[1]?.id as string, ALL)).items;
     expect(events.map((e) => e.type)).toEqual(["SCHEDULED", "NAG_SENT", "SUPERSEDED"]);
     expect(events[1]).toMatchObject({
       at: "2030-06-10T09:00:00Z",
@@ -220,9 +247,12 @@ describe("occurrence queries and acknowledge", () => {
     const h = harness();
     const r = create(h);
     value(deleteReminder(h.deps, r.id));
-    expect(listOccurrences(h.deps, r.id)).toMatchObject({ ok: false });
-    expect(listOccurrences(h.deps, "nope")).toMatchObject({ ok: false });
-    expect(listEvents(h.deps, "nope")).toMatchObject({ ok: false, error: { code: "NOT_FOUND" } });
+    expect(listOccurrences(h.deps, r.id, ALL)).toMatchObject({ ok: false });
+    expect(listOccurrences(h.deps, "nope", ALL)).toMatchObject({ ok: false });
+    expect(listEvents(h.deps, "nope", ALL)).toMatchObject({
+      ok: false,
+      error: { code: "NOT_FOUND" },
+    });
     expect(acknowledge(h.deps, "nope")).toMatchObject({ ok: false, error: { code: "NOT_FOUND" } });
   });
 

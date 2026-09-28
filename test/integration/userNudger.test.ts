@@ -26,10 +26,10 @@ const create = async (n: TestNudger, overrides: Partial<CreateReminderInput> = {
   value(await n.stub.createReminder(input(overrides)));
 
 const occurrencesOf = async (n: TestNudger, reminderId: string) =>
-  value(await n.stub.listOccurrences(reminderId));
+  value(await n.stub.listOccurrences(reminderId)).items;
 
 const eventTypes = async (n: TestNudger, occurrenceId: string) =>
-  value(await n.stub.listEvents(occurrenceId)).map((e) => e.type);
+  value(await n.stub.listEvents(occurrenceId)).items.map((e) => e.type);
 
 describe("UserNudger", () => {
   it("sets the alarm to a new reminder's first occurrence", async () => {
@@ -39,7 +39,7 @@ describe("UserNudger", () => {
     expect(reminder).toMatchObject({ status: "ACTIVE", nextOccurrenceAt: "2030-06-10T09:00:00Z" });
     expect(await alarmAt(n.stub)).toEqual(T0);
     expect(value(await n.stub.getReminder(reminder.id))).toEqual(reminder);
-    expect(await n.stub.listReminders()).toEqual([reminder]);
+    expect((await n.stub.listReminders()).items).toEqual([reminder]);
   });
 
   it("sends the escalating sequence of intervals and priorities (firm)", async () => {
@@ -107,7 +107,7 @@ describe("UserNudger", () => {
     const [occ] = await occurrencesOf(n, reminder.id);
     const id = occ?.id as string;
     expect(n.notifier.sent).toHaveLength(0);
-    expect(value(await n.stub.listEvents(id)).at(-1)).toMatchObject({
+    expect(value(await n.stub.listEvents(id)).items.at(-1)).toMatchObject({
       type: "SEND_FAILED",
       data: { attempt: 1, tries: 1, nextTryAt: "2030-06-10T09:00:30Z" },
     });
@@ -128,7 +128,7 @@ describe("UserNudger", () => {
     for (let i = 0; i < MAX_TRIES; i++) await fireNextAlarm(n);
 
     const [occ] = await occurrencesOf(n, reminder.id);
-    const failures = value(await n.stub.listEvents(occ?.id as string)).filter(
+    const failures = value(await n.stub.listEvents(occ?.id as string)).items.filter(
       (e) => e.type === "SEND_FAILED",
     );
     expect(failures.map((e) => e.data)).toEqual([
@@ -195,7 +195,7 @@ describe("UserNudger", () => {
     await fireNextAlarm(n);
     const [occ] = await occurrencesOf(n, reminder.id);
     expect(n.notifier.sent).toHaveLength(0);
-    expect(value(await n.stub.listEvents(occ?.id as string)).at(-1)).toMatchObject({
+    expect(value(await n.stub.listEvents(occ?.id as string)).items.at(-1)).toMatchObject({
       type: "DEFERRED_QUIET",
       data: { until: "2030-06-11T11:00:00Z" },
     });
@@ -237,7 +237,7 @@ describe("UserNudger", () => {
     expect(await n.stub.deleteReminder(reminder.id)).toEqual({ ok: true, value: null });
 
     expect(await alarmAt(n.stub)).toBeNull();
-    expect(await n.stub.listReminders()).toEqual([]);
+    expect((await n.stub.listReminders()).items).toEqual([]);
     expect(await n.stub.getReminder(reminder.id)).toMatchObject({
       ok: false,
       error: { code: "NOT_FOUND" },

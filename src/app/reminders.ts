@@ -8,28 +8,54 @@ import {
   reminderToDto,
   type UpdateReminderInput,
 } from "./dto";
+import { type Page, type PageRequest, probe, toPage } from "./pagination";
 import type { ReminderRecord, UseCaseDeps } from "./ports";
 import { type AppResult, invalid, notFound, ok } from "./result";
-import { saveTransition, valid } from "./shared";
+import { isTimeZone, saveTransition, valid } from "./shared";
 
 type Schedule = Pick<Reminder, "dtstart" | "timezone" | "rrule">;
 
 /**
- * Parses a schedule. Full validation (RRULE limits, dtstart in a DST gap) is the HTTP
- * layer's job (Milestone 4); this only rejects what would break scheduling.
+ * Parses a schedule and rejects one that can't be scheduled as written: an unknown time
+ * zone, a malformed `dtstart` or rule, or a `dtstart` that doesn't exist because it falls
+ * in a daylight-saving gap (ADR 0004). The gap check needs `dtstart` and `timezone`
+ * together, so it lives here rather than in the HTTP layer, which only sees the fields a
+ * PATCH sends (ADR 0008). The RRULE limits are the HTTP layer's job.
  */
 function parseSchedule(
   dtstart: string,
   timezone: string,
   rrule: string | null,
 ): AppResult<Schedule> {
+  if (!isTimeZone(timezone)) return invalid(`unknown time zone: ${timezone}`, "timezone");
+
+  let start: Temporal.PlainDateTime;
   try {
-    const schedule = { dtstart: Temporal.PlainDateTime.from(dtstart), timezone, rrule };
-    // Throws RangeError for an unknown time zone or a malformed rule.
-    nextOccurrence(rrule, schedule.dtstart, timezone, Temporal.Instant.fromEpochMilliseconds(0));
+    start = Temporal.PlainDateTime.from(dtstart);
+  } catch {
+    return invalid("dtstart must be a local date-time, e.g. 2030-06-10T09:00", "dtstart");
+  }
+  // Resolving a local time in a gap moves it forward, so its wall-clock time changes. A
+  // repeated local time (clocks going back) keeps it, and is allowed. Temporal's
+  // "reject" disambiguation would refuse both.
+  const resolved = start.toZonedDateTime(timezone, { disambiguation: "compatible" });
+  if (!resolved.toPlainDateTime().equals(start)) {
+    return invalid(
+      `dtstart ${start.toString()} doesn't exist in ${timezone}: it falls in a daylight-saving gap`,
+      "dtstart",
+    );
+  }
+
+  const schedule = { dtstart: start, timezone, rrule };
+  try {
+    // Throws RangeError for a malformed rule.
+    nextOccurrence(rrule, start, timezone, Temporal.Instant.fromEpochMilliseconds(0));
     return ok(schedule);
   } catch (error) {
-    return invalid(`invalid schedule: ${error instanceof Error ? error.message : String(error)}`);
+    return invalid(
+      `invalid rrule: ${error instanceof Error ? error.message : String(error)}`,
+      "rrule",
+    );
   }
 }
 
@@ -152,6 +178,7 @@ export function getReminder(deps: UseCaseDeps, id: string): AppResult<ReminderDt
   return reminder === null ? notFound("reminder") : ok(reminderToDto(reminder));
 }
 
-export function listReminders(deps: UseCaseDeps): ReminderDto[] {
-  return deps.repo.listReminders().map(reminderToDto);
+/** A page of live reminders, oldest first. */
+export function listReminders(deps: UseCaseDeps, page: PageRequest): Page<ReminderDto> {
+  return toPage(deps.repo.listReminders(probe(page)), page, reminderToDto);
 }

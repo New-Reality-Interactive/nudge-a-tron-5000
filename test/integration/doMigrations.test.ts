@@ -38,13 +38,14 @@ const TEST_TABLE = "_test_migrations";
 describe("DO schema migrations", () => {
   it("runs every migration on a fresh object before it serves a request", async () => {
     const stub = fresh();
-    expect(await stub.listReminders()).toEqual([]);
+    expect((await stub.listReminders()).items).toEqual([]);
 
     expect((await applied(stub)).map((m) => [m.version, m.name])).toEqual(
       MIGRATIONS.map((m) => [m.version, m.name]),
     );
     expect(await tables(stub)).toEqual([
       "events",
+      "idempotency_keys",
       "occurrences",
       "outbox",
       "reminders",

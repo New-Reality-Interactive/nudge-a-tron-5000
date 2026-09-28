@@ -1,11 +1,5 @@
-import type { Clock, IdGenerator } from "../../app/ports";
-
-/** Fills `bytes` with random values. */
-export type RandomSource = (bytes: Uint8Array) => void;
-
-const cryptoRandom: RandomSource = (bytes) => {
-  crypto.getRandomValues(bytes);
-};
+import type { Clock, IdGenerator, RandomSource } from "../../app/ports";
+import { cryptoRandom } from "./cryptoRandom";
 
 /**
  * UUIDv7 (RFC 9562 §5.7): a 48-bit Unix millisecond timestamp from the injected `Clock`,

@@ -1,6 +1,7 @@
 import { Temporal } from "temporal-polyfill";
 import { deliverOutbox, processDue } from "../../../src/app/alarm";
 import type { CreateReminderInput, ReminderDto } from "../../../src/app/dto";
+import type { PageRequest } from "../../../src/app/pagination";
 import type { UseCaseDeps } from "../../../src/app/ports";
 import { createReminder } from "../../../src/app/reminders";
 import type { AppResult } from "../../../src/app/result";
@@ -10,6 +11,9 @@ import {
   InMemoryReminderRepo,
   SequentialIdGenerator,
 } from "../../support/fakes";
+
+/** A page big enough for any test. */
+export const ALL: PageRequest = { limit: 1000, after: null };
 
 /** 2030-06-10T09:00 in UTC, the default settings' time zone. */
 export const T0 = Temporal.Instant.from("2030-06-10T09:00:00Z");

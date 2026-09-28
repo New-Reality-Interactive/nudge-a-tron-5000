@@ -1,0 +1,27 @@
+# REST Client (humao.rest-client). Start the Worker with `npm run dev` first, and apply
+# the D1 migrations locally once: npx wrangler d1 migrations apply DB --local
+#
+# Admin routes need the ADMIN_API_KEY from your .dev.vars. Paste it below.
+@baseUrl = http://localhost:8787/v0
+@adminKey = paste-ADMIN_API_KEY-from-.dev.vars
+
+### Create a user
+# @name createUser
+POST {{baseUrl}}/admin/users
+Authorization: Bearer {{adminKey}}
+Content-Type: application/json
+
+{
+  "name": "Ada",
+  "timezone": "America/New_York"
+}
+
+### Issue an API key for that user. The full key is only in this response:
+### copy it into @apiKey in reminders.http and me.http.
+# @name issueKey
+POST {{baseUrl}}/admin/users/{{createUser.response.body.id}}/keys
+Authorization: Bearer {{adminKey}}
+
+### Revoke that key
+DELETE {{baseUrl}}/admin/users/{{createUser.response.body.id}}/keys/{{issueKey.response.body.keyId}}
+Authorization: Bearer {{adminKey}}

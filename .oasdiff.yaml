@@ -1,0 +1,4 @@
+# oasdiff configuration, read by the OpenAPI breaking-change check in ci.yml.
+# ADR 0007 lets a major version add enum values and new variants to responses (clients
+# must ignore values they don't know), so those checks are lowered from error to info.
+severity-levels: .github/oasdiff-levels.txt

@@ -1,6 +1,6 @@
 # Milestone 4: HTTP API + auth
 
-**Status:** Not started
+**Status:** Done
 **Depends on:** Milestone 3
 **Branch:** `feat/http-api-auth`
 
@@ -77,16 +77,25 @@ Put the versioned REST API in front of the `UserNudger` DO: per-user API keys st
 
 ## Acceptance criteria
 
-- [ ] The first D1 migration is added and applies cleanly in tests
-- [ ] All routes are implemented and documented in OpenAPI
-- [ ] The OpenAPI snapshot is committed, and the CI diff check is part of `verify`
-- [ ] Auth, tenancy, validation and idempotency tests pass. `npm run coverage` passes
-- [ ] Secrets never appear in logs or responses. Constant-time comparison is used for API keys and the admin key
-- [ ] `requests/*.http` covers the main flows
-- [ ] README updated with API usage and how to create the first user and key
-- [ ] This spec's Status is set to Done and `docs/milestones/README.md` is updated
+- [x] The first D1 migration is added and applies cleanly in tests
+- [x] All routes are implemented and documented in OpenAPI
+- [x] The OpenAPI snapshot is committed, and the CI diff check is part of `verify`
+- [x] Auth, tenancy, validation and idempotency tests pass. `npm run coverage` passes
+- [x] Secrets never appear in logs or responses. Constant-time comparison is used for API keys and the admin key
+- [x] `requests/*.http` covers the main flows
+- [x] README updated with API usage and how to create the first user and key
+- [x] This spec's Status is set to Done and `docs/milestones/README.md` is updated
 
 ## Open questions (answer them in the plan)
+
+Answered in [ADR 0008](../adr/0008-http-api-conventions.md):
+- **Users:** D1 holds identity (id, name, time zone). The DO keeps its own copy of the time zone and quiet hours, because alarms run without a request. `PATCH /v0/me` writes the DO, then D1.
+- **Pagination:** keyset, with an opaque cursor. `limit` defaults to 50, with a maximum of 200. Every list returns `{ items, nextCursor }`.
+- **Idempotency keys:** stored per user in the DO and kept for 24 hours. Admin POSTs don't take them.
+- **DELETE:** soft delete. The open occurrence closes as `CANCELLED` (ADR 0006), the route returns 204, and deleting again returns 404.
+- **Breaking changes:** yes. CI runs `oasdiff` on pull requests as a GitHub Action (not an npm dependency). ADR 0007's allowed response additions are lowered to `info` in `.oasdiff.yaml`.
+
+The original questions:
 
 - Where do `users` live? D1 is the source of truth. Does the DO keep a copy of timezone and quiet hours, or does it get them on each call?
 - How are lists paginated: by cursor or offset? What's the default page size?

@@ -15,12 +15,16 @@ import type {
   SettingsPatch,
   UpdateReminderInput,
 } from "../app/dto";
+import { type IdempotencyRequest, idempotent } from "../app/idempotency";
 import * as occurrences from "../app/occurrences";
+import { DEFAULT_PAGE_SIZE, type Page, type PageRequest } from "../app/pagination";
 import type { Clock, IdGenerator, Notifier, UseCaseDeps } from "../app/ports";
 import * as reminders from "../app/reminders";
 import type { AppResult } from "../app/result";
 import * as settings from "../app/settings";
 import { MIGRATIONS } from "./migrations";
+
+const FIRST_PAGE: PageRequest = { limit: DEFAULT_PAGE_SIZE, after: null };
 
 export interface NudgerDeps {
   clock: Clock;
@@ -34,7 +38,8 @@ export interface NudgerDeps {
  * a single alarm set to the earliest pending nag, occurrence or delivery retry.
  *
  * The public methods are its RPC surface for the HTTP API (M4) and the ack route (M5).
- * They take and return plain data, and report errors as `AppResult` values.
+ * They take and return plain data, and report errors as `AppResult` values. The mutating
+ * calls that back a POST take an optional `IdempotencyRequest` (ADR 0008).
  */
 export class UserNudger extends DurableObject<Env> {
   /**
@@ -64,16 +69,22 @@ export class UserNudger extends DurableObject<Env> {
     return settings.updateSettings(this.#deps(), patch);
   }
 
-  createReminder(input: CreateReminderInput): Promise<AppResult<ReminderDto>> {
-    return this.#thenReschedule(reminders.createReminder(this.#deps(), input));
+  createReminder(
+    input: CreateReminderInput,
+    idempotency?: IdempotencyRequest,
+  ): Promise<AppResult<ReminderDto>> {
+    const deps = this.#deps();
+    return this.#thenReschedule(
+      idempotent(deps, idempotency, () => reminders.createReminder(deps, input)),
+    );
   }
 
   getReminder(id: string): AppResult<ReminderDto> {
     return reminders.getReminder(this.#deps(), id);
   }
 
-  listReminders(): ReminderDto[] {
-    return reminders.listReminders(this.#deps());
+  listReminders(page: PageRequest = FIRST_PAGE): Page<ReminderDto> {
+    return reminders.listReminders(this.#deps(), page);
   }
 
   updateReminder(id: string, patch: UpdateReminderInput): Promise<AppResult<ReminderDto>> {
@@ -84,17 +95,23 @@ export class UserNudger extends DurableObject<Env> {
     return this.#thenReschedule(reminders.deleteReminder(this.#deps(), id));
   }
 
-  listOccurrences(reminderId: string): AppResult<OccurrenceDto[]> {
-    return occurrences.listOccurrences(this.#deps(), reminderId);
+  listOccurrences(
+    reminderId: string,
+    page: PageRequest = FIRST_PAGE,
+  ): AppResult<Page<OccurrenceDto>> {
+    return occurrences.listOccurrences(this.#deps(), reminderId, page);
   }
 
-  listEvents(occurrenceId: string): AppResult<EventDto[]> {
-    return occurrences.listEvents(this.#deps(), occurrenceId);
+  listEvents(occurrenceId: string, page: PageRequest = FIRST_PAGE): AppResult<Page<EventDto>> {
+    return occurrences.listEvents(this.#deps(), occurrenceId, page);
   }
 
   /** Idempotent: an occurrence that's already closed comes back as `already_closed`. */
-  acknowledge(occurrenceId: string): Promise<AppResult<AckDto>> {
-    return this.#thenReschedule(occurrences.acknowledge(this.#deps(), occurrenceId));
+  acknowledge(occurrenceId: string, idempotency?: IdempotencyRequest): Promise<AppResult<AckDto>> {
+    const deps = this.#deps();
+    return this.#thenReschedule(
+      idempotent(deps, idempotency, () => occurrences.acknowledge(deps, occurrenceId)),
+    );
   }
 
   /**
