@@ -45,11 +45,17 @@ export function completeIfFinished(repo: ReminderRepo, reminderId: string): void
   }
 }
 
-/** Whether `tz` is an IANA time zone that Temporal knows. */
+/**
+ * Whether `tz` is exactly an IANA time zone name that Temporal knows, e.g.
+ * `America/New_York`. Temporal also resolves other strings to a zone: other casings
+ * (`america/new_york`), whole date-times (`2020-01-01T00:00Z`) and fixed offsets
+ * (`+05:00`). Those are refused, so what's stored and returned is always the name as
+ * written (ADR 0008).
+ */
 export function isTimeZone(tz: string): boolean {
+  if (/^[+-]/.test(tz)) return false;
   try {
-    Temporal.Instant.fromEpochMilliseconds(0).toZonedDateTimeISO(tz);
-    return true;
+    return Temporal.Instant.fromEpochMilliseconds(0).toZonedDateTimeISO(tz).timeZoneId === tz;
   } catch {
     return false;
   }

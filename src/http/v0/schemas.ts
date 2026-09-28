@@ -24,8 +24,11 @@ const TimeZone = z
   .string()
   .min(1)
   .max(64)
-  .refine(isTimeZone, "must be an IANA time zone, e.g. America/New_York")
-  .openapi({ example: "America/New_York" });
+  .refine(isTimeZone, "must be an IANA time zone name, e.g. America/New_York")
+  .openapi({
+    description: "An IANA time zone name, exactly as listed (not an offset such as +05:00).",
+    example: "America/New_York",
+  });
 
 const LocalDateTime = z
   .string()

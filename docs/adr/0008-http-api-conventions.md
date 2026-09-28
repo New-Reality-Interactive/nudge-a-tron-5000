@@ -70,7 +70,7 @@ Every error is an RFC 9457 `application/problem+json` body: `{ type, title, stat
 | `cap.maxAttempts` | 1–100 |
 | user `name` | 1–100 characters, not blank |
 | `dtstart` | `YYYY-MM-DDTHH:MM[:SS]`, local to `timezone` |
-| `timezone` | an IANA time zone Temporal knows |
+| `timezone` | an IANA time zone name Temporal knows, exactly as written: not another casing, a date-time or an offset such as `+05:00` |
 | `rrule` | at most 500 characters |
 | page `limit` | 1–200, default 50 |
 | `Idempotency-Key` | 1–255 printable ASCII characters |

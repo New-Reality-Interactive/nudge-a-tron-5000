@@ -77,6 +77,9 @@ describe("dtstart and time zones", () => {
 
   it.each([
     ["an unknown time zone", { timezone: "Mars/Olympus_Mons" }, "timezone"],
+    ["a lowercase time zone", { timezone: "america/new_york" }, "timezone"],
+    ["a date-time as the time zone", { timezone: "2020-01-01T00:00Z" }, "timezone"],
+    ["a fixed offset as the time zone", { timezone: "+05:00" }, "timezone"],
     ["a dtstart with an offset", { dtstart: "2030-06-10T09:00Z" }, "dtstart"],
     ["a date-only dtstart", { dtstart: "2030-06-10" }, "dtstart"],
     ["an impossible date", { dtstart: "2030-02-30T09:00" }, "dtstart"],
