@@ -1,6 +1,8 @@
 import { Temporal } from "temporal-polyfill";
 import type { PageRequest } from "../../src/app/pagination";
 import {
+  type ApiKeyRecord,
+  type AuthStore,
   type Clock,
   DEFAULT_SETTINGS,
   type EventRecord,
@@ -12,6 +14,7 @@ import {
   type ReminderRecord,
   type ReminderRepo,
   type Settings,
+  type UserRecord,
 } from "../../src/app/ports";
 import type { ClosedOccurrence, Event, Occurrence, OpenOccurrence } from "../../src/domain/types";
 
@@ -256,4 +259,50 @@ export class InMemoryReminderRepo implements ReminderRepo {
       if (cmp(record.expiresAt, now) <= 0) this.idempotency.delete(key);
     }
   }
+}
+
+/** `AuthStore` in memory, mirroring the D1 adapter. */
+export class InMemoryAuthStore implements AuthStore {
+  users = new Map<string, UserRecord>();
+  keys = new Map<string, ApiKeyRecord>();
+
+  async findKey(keyId: string): Promise<{ key: ApiKeyRecord; user: UserRecord } | null> {
+    const key = this.keys.get(keyId);
+    const user = key === undefined ? undefined : this.users.get(key.userId);
+    return key === undefined || user === undefined ? null : { key, user };
+  }
+
+  async getUser(id: string): Promise<UserRecord | null> {
+    return this.users.get(id) ?? null;
+  }
+
+  async insertUser(user: UserRecord): Promise<void> {
+    if (this.users.has(user.id)) throw new Error(`duplicate user ${user.id}`);
+    this.users.set(user.id, user);
+  }
+
+  async updateUserTimezone(id: string, timezone: string): Promise<void> {
+    const user = this.users.get(id);
+    if (user !== undefined) this.users.set(id, { ...user, timezone });
+  }
+
+  async insertKey(key: ApiKeyRecord): Promise<void> {
+    if (this.keys.has(key.keyId)) throw new Error(`duplicate key ${key.keyId}`);
+    this.keys.set(key.keyId, key);
+  }
+
+  async revokeKey(userId: string, keyId: string, at: Temporal.Instant): Promise<boolean> {
+    const key = this.keys.get(keyId);
+    if (key === undefined || key.userId !== userId) return false;
+    this.keys.set(keyId, { ...key, revokedAt: key.revokedAt ?? at });
+    return true;
+  }
+}
+
+/** Random bytes from a counter: 0, 1, 2, … so issued keys are predictable. */
+export function countingRandom(): (bytes: Uint8Array) => void {
+  let next = 0;
+  return (bytes) => {
+    for (let i = 0; i < bytes.length; i++) bytes[i] = next++ & 0xff;
+  };
 }

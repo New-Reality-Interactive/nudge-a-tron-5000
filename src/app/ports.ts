@@ -21,6 +21,9 @@ export interface IdGenerator {
   next(): string;
 }
 
+/** Fills `bytes` with random values. Production uses `crypto.getRandomValues`. */
+export type RandomSource = (bytes: Uint8Array) => void;
+
 /**
  * One nag to deliver. Titles only (ADR 0002): the body opt-in arrives with the ntfy
  * adapter in Milestone 5.
@@ -151,4 +154,37 @@ export interface UseCaseDeps {
   repo: ReminderRepo;
   clock: Clock;
   ids: IdGenerator;
+}
+
+/** A user, as stored in D1. */
+export interface UserRecord {
+  id: string;
+  name: string;
+  timezone: string;
+  createdAt: Temporal.Instant;
+}
+
+/** An API key, as stored in D1. Only the SHA-256 of the secret is kept. */
+export interface ApiKeyRecord {
+  keyId: string;
+  userId: string;
+  /** Lowercase hex SHA-256 of the key's secret. */
+  secretHash: string;
+  createdAt: Temporal.Instant;
+  revokedAt: Temporal.Instant | null;
+}
+
+/** Global identity data: users and their API keys (D1). */
+export interface AuthStore {
+  /** The key with its owner, or null for an unknown key id. */
+  findKey(keyId: string): Promise<{ key: ApiKeyRecord; user: UserRecord } | null>;
+  getUser(id: string): Promise<UserRecord | null>;
+  insertUser(user: UserRecord): Promise<void>;
+  updateUserTimezone(id: string, timezone: string): Promise<void>;
+  insertKey(key: ApiKeyRecord): Promise<void>;
+  /**
+   * Sets `revokedAt` on the user's key unless it's already revoked. Resolves false when
+   * the user has no key with that id.
+   */
+  revokeKey(userId: string, keyId: string, at: Temporal.Instant): Promise<boolean>;
 }
