@@ -35,6 +35,9 @@ export default defineConfig({
         test: {
           name: "unit",
           environment: "node",
+          // The fast-check properties are CPU-bound. Run in parallel with the other
+          // projects, or under v8 coverage on CI runners, some take longer than 5 s.
+          testTimeout: 30_000,
           include: ["test/unit/**/*.test.ts"],
         },
       },

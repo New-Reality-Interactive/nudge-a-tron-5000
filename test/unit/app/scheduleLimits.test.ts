@@ -95,10 +95,14 @@ describe("the 1-minute minimum between occurrences", () => {
       fc.property(
         allowedRuleArb,
         zonedNearDstArb,
+        fc.integer({ min: 0, max: 6 * 60 }),
         fc.integer({ min: 0, max: 59 }),
-        (rrule, { tz, at }, second) => {
+        (rrule, { tz, at }, minutesBefore, second) => {
           expect(checkRrule(rrule)).toEqual([]);
+          // The series starts up to six hours before `at`, which is near a DST change,
+          // and the occurrences checked are the ones from just before `at` onwards.
           const dtstart = at
+            .subtract({ minutes: minutesBefore })
             .toZonedDateTimeISO(tz)
             .toPlainDateTime()
             .round({ smallestUnit: "minute", roundingMode: "floor" })
@@ -110,11 +114,13 @@ describe("the 1-minute minimum between occurrences", () => {
           // makes the recurrence library give up and throw, so creating it is rejected.
           fc.pre(schedulable(rrule, dtstart, tz));
 
+          // Occurrences more than two days past the DST change add nothing but time.
+          const until = at.add({ hours: 48 });
           let previous: Temporal.Instant | null = null;
-          let after = dtstart.toZonedDateTime(tz).toInstant().subtract({ nanoseconds: 1 });
-          for (let i = 0; i < 25; i++) {
+          let after = at.subtract({ minutes: 5 });
+          for (let i = 0; i < 10; i++) {
             const next = nextOccurrence(rrule, dtstart, tz, after);
-            if (next === null) break;
+            if (next === null || Temporal.Instant.compare(next, until) > 0) break;
             if (previous !== null) {
               expect(previous.until(next).total("seconds")).toBeGreaterThanOrEqual(60);
             }
