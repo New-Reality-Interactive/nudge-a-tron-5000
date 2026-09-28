@@ -126,7 +126,8 @@ wrangler.jsonc, biome.json, tsconfig.json (strict), .github/workflows/
 4. **HTTP API + auth**: API keys, reminders CRUD, OpenAPI.
 5. **Ack flow + ntfy adapter**: signed tokens, action buttons, end-to-end test.
 6. **Hardening**: rate limits, validation limits, staging deploy, runbook.
-7. **Later**: Twilio SMS adapter (inbound replies, 10DLC/toll-free verification), snooze, pause/resume, CLI/web/Shortcuts clients.
+7. **Swagger UI**: an interactive API docs page per major version, rendering its OpenAPI document.
+8. **Later**: Twilio SMS adapter (inbound replies, 10DLC/toll-free verification), snooze, pause/resume, CLI/web/Shortcuts clients.
 
 ## Verification
 - `npm test` runs the unit tests: the domain property tests cover DST transitions, leap days, carry-over monotonicity, the cap always terminating, and quiet-hour deferral never landing inside the window.

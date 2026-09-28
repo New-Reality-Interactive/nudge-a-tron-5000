@@ -1,8 +1,8 @@
-# Milestone 7: Later (post-MVP backlog)
+# Milestone 8: Later (post-MVP backlog)
 
 **Status:** Not planned
 
-These items are deliberately outside the MVP. Each one needs its own spec before it's built: copy the structure of `02`–`06` (Goal, Scope, Out of scope, Tests, Acceptance criteria, Open questions, Post-merge, Kickoff prompt) into a new `08-…md`, `09-…md` and so on. For anything that affects the architecture, start with a planning session, not an implementation session.
+These items are deliberately outside the MVP. Each one needs its own spec before it's built: copy the structure of `02`–`07` (Goal, Scope, Out of scope, Tests, Acceptance criteria, Open questions, Post-merge, Kickoff prompt) into a new `09-…md`, `10-…md` and so on. For anything that affects the architecture, start with a planning session, not an implementation session.
 
 ## Candidates
 
@@ -32,7 +32,7 @@ Use this prompt to turn one candidate into a spec before implementing it:
 Don't write code in this session. Produce a milestone spec at
 `docs/milestones/{{NN}}-{{slug}}.md`, following the structure of `02-domain-core.md`.
 
-1. Read `CLAUDE.md`, `docs/architecture.md`, the ADRs, `docs/milestones/07-later.md`, and the
+1. Read `CLAUDE.md`, `docs/architecture.md`, the ADRs, `docs/milestones/08-later.md`, and the
    code the feature would touch.
 2. Ask me the questions you need answered about behaviour, cost and limits.
 3. Draft the spec: goal, scope, out of scope, tests, acceptance criteria, open questions,

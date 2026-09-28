@@ -33,7 +33,7 @@ Send real notifications and let people stop them. Nags go to the user's phone th
 
 ## Out of scope
 
-- The Twilio SMS adapter (M7)
+- The Twilio SMS adapter (the post-MVP backlog, [08-later.md](08-later.md))
 - Rate limiting (M6)
 
 ## Tests
