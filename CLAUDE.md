@@ -69,14 +69,17 @@ are in `docs/milestones/`. Update a milestone's Status and checklist in the PR t
 - **Never merge PRs.** The `main` ruleset requires `verify` and an up-to-date branch, with no
   bypass.
 - **Every deployable merge goes to production** (ADR 0007). When the user says a PR is merged,
-  update `main` and wait for its staging deploy to succeed. Then, without asking, push an
-  annotated tag on that merge commit and watch the production deploy:
-  - a milestone PR: `vX.N.0`, where N is the milestone (M4 is `v0.4.0`, M6 is `v0.6.0`)
-  - any other PR that deployed to staging: the next patch, `vX.N.(P+1)`
+  update `main` and wait for its staging deploy to succeed. If staging failed, stop and report
+  instead. Then push an annotated tag on that merge commit and watch the production deploy:
+  - a milestone PR: `vX.N.0`, where N is the milestone (M4 is `v0.4.0`, M6 is `v0.6.0`).
+    **Stop after staging and wait for the user's go-ahead before tagging.** Report the staging
+    deploy result and remind them of the spec's post-merge checks (e.g. the D1 migration and
+    the staging smoke test). Tag only once they say to.
+  - any other PR that deployed to staging: the next patch, `vX.N.(P+1)`, without asking
   - a docs- or tests-only PR (no staging deploy): no tag
 
-  If staging failed, stop and report instead. The major version X is `0` and changes only when
-  the user says so. Push any other tag only when asked.
+  The major version X is `0` and changes only when the user says so. Push any other tag only
+  when asked.
 
 ## Compatibility (ADR 0007)
 - The API lives at `/v0`; its URI major always equals the release major. Within a major, every
