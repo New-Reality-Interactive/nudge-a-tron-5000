@@ -48,6 +48,45 @@ jobs:
       - name: Coverage gate
         run: npm run coverage
 
+      # The committed openapi/v0.json must match the document the code generates.
+      # Regenerate it with `npm run openapi` and commit the diff.
+      - name: OpenAPI diff check
+        run: npm run openapi:check
+
+      # ADR 0007: within a major version the API only grows. On a pull request, compare
+      # the committed snapshot with the base branch's and fail on a breaking change.
+      - name: Check out the base branch's OpenAPI snapshot
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.base_ref }}
+          path: base
+          sparse-checkout: openapi
+          persist-credentials: false
+
+      - name: Find the base snapshot
+        id: base-openapi
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          if [ -f base/openapi/v0.json ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::The base branch has no openapi/v0.json yet; skipping the breaking-change check."
+          fi
+
+      # review: false and no token keep the specs in CI: nothing is uploaded to
+      # oasdiff.com and no PR comment is posted.
+      - name: OpenAPI breaking-change check
+        if: ${{ steps.base-openapi.outputs.exists == 'true' }}
+        uses: oasdiff/oasdiff-action/breaking@v0.1.17
+        with:
+          base: base/openapi/v0.json
+          revision: openapi/v0.json
+          fail-on: ERR
+          review: false
+          github-token: ""
+
       - name: Upload coverage report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
