@@ -1,0 +1,1580 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nudge-A-Tron Web</title>
+<meta name="description" content="Mockup of a web client for the Nudge-A-Tron 5000 /v0 REST API. Static mock data; no network calls.">
+<style>
+:root {
+  --bg: #f6f4ef;
+  --surface: #ffffff;
+  --surface-2: #f0ede6;
+  --text: #1d1b18;
+  --muted: #6b665d;
+  --line: #e2ddd2;
+  --accent: #d9542a;
+  --accent-ink: #ffffff;
+  --accent-soft: #fde6dc;
+  --gentle: #2b8563;
+  --gentle-soft: #dcf1e8;
+  --firm: #a86d12;
+  --firm-soft: #fbeed3;
+  --relentless: #c2352b;
+  --relentless-soft: #fadcd8;
+  --ok: #2b8563;
+  --quiet: #5b5fc7;
+  --quiet-soft: #e3e4fa;
+  --g1: #2f68c9; --g2: #b83f86; --g3: #17857f; --g4: #7650c4; --g5: #7a7a1e; --g6: #5a6472;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.05), 0 4px 16px rgb(0 0 0 / 0.06);
+  --radius: 14px;
+  --nav-h: 64px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141311; --surface: #1d1b19; --surface-2: #272421; --text: #eeeae3; --muted: #a39d92;
+    --line: #35312c; --accent: #ff7a4d; --accent-ink: #1a0d07; --accent-soft: #3a2219;
+    --gentle: #5cc79c; --gentle-soft: #16302a; --firm: #e6ad4c; --firm-soft: #33280f;
+    --relentless: #ff6f61; --relentless-soft: #3a1a17; --ok: #5cc79c; --quiet: #9da1ff; --quiet-soft: #23244a;
+    --g1: #6f9ff5; --g2: #f07cc0; --g3: #4ccbc2; --g4: #ab8cf5; --g5: #c2c25a; --g6: #9aa5b4;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 16px rgb(0 0 0 / 0.3);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141311; --surface: #1d1b19; --surface-2: #272421; --text: #eeeae3; --muted: #a39d92;
+  --line: #35312c; --accent: #ff7a4d; --accent-ink: #1a0d07; --accent-soft: #3a2219;
+  --gentle: #5cc79c; --gentle-soft: #16302a; --firm: #e6ad4c; --firm-soft: #33280f;
+  --relentless: #ff6f61; --relentless-soft: #3a1a17; --ok: #5cc79c; --quiet: #9da1ff; --quiet-soft: #23244a;
+  --g1: #6f9ff5; --g2: #f07cc0; --g3: #4ccbc2; --g4: #ab8cf5; --g5: #c2c25a; --g6: #9aa5b4;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 16px rgb(0 0 0 / 0.3);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3 { line-height: 1.2; margin: 0; }
+code, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 0.85em; }
+
+/* ---------- Layout ---------- */
+.app { min-height: 100dvh; }
+.sidebar {
+  position: fixed; inset: auto 0 0 0; height: calc(var(--nav-h) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--surface); border-top: 1px solid var(--line); z-index: 20;
+}
+.brand { display: none; }
+.nav { display: grid; grid-template-columns: repeat(5, 1fr); height: var(--nav-h); margin: 0; padding: 0; list-style: none; }
+.nav a {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  height: 100%; color: var(--muted); text-decoration: none; font-size: 12px; font-weight: 600;
+}
+.nav a[aria-current="page"] { color: var(--accent); }
+.nav svg { width: 22px; height: 22px; }
+.nav .count {
+  display: inline-block; min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--accent);
+  color: var(--accent-ink); font-size: 11px; line-height: 18px; text-align: center; margin-left: 4px;
+}
+.sidebar-foot { display: none; }
+main { padding: 0 16px calc(var(--nav-h) + env(safe-area-inset-bottom) + 24px); max-width: 1040px; margin: 0 auto; }
+.topbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 0; position: sticky; top: 0; background: var(--bg); z-index: 10;
+}
+.topbar .who { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.mobile-logo { font-weight: 800; letter-spacing: -0.02em; white-space: nowrap; }
+.mobile-logo span { color: var(--accent); }
+.top-actions { display: flex; gap: 8px; align-items: center; }
+
+@media (min-width: 860px) {
+  .app { display: grid; grid-template-columns: 232px 1fr; }
+  .sidebar {
+    position: sticky; inset: 0 auto auto auto; height: 100dvh; padding: 20px 14px;
+    border-top: 0; border-right: 1px solid var(--line); display: flex; flex-direction: column;
+  }
+  .brand { display: block; font-weight: 800; font-size: 19px; letter-spacing: -0.02em; padding: 4px 10px 22px; }
+  .brand span { color: var(--accent); }
+  .brand small { display: block; font-weight: 500; font-size: 12px; color: var(--muted); letter-spacing: 0; }
+  .nav { display: flex; flex-direction: column; height: auto; gap: 2px; }
+  .nav a { flex-direction: row; justify-content: flex-start; gap: 10px; padding: 9px 10px; border-radius: 10px; font-size: 15px; font-weight: 500; }
+  .nav a:hover { background: var(--surface-2); color: var(--text); }
+  .nav a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .nav a > span { display: flex; flex: 1; align-items: center; }
+  .nav .count { margin-left: auto; }
+  .sidebar-foot { display: block; margin-top: auto; font-size: 13px; color: var(--muted); padding: 10px; }
+  main { padding: 0 32px 48px; }
+  .mobile-logo { display: none; }
+  .topbar { padding: 22px 0 14px; }
+}
+
+/* ---------- Components ---------- */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+.section { margin-top: 28px; }
+.section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.section-head h2 { font-size: 18px; }
+.muted { color: var(--muted); }
+.small { font-size: 14px; }
+.tiny { font-size: 12px; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 40px; padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--surface); font-weight: 600; font-size: 15px; white-space: nowrap; text-decoration: none;
+}
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn.danger { color: var(--relentless); }
+.btn.ghost { border-color: transparent; background: transparent; }
+.btn.ghost:hover { background: var(--surface-2); }
+.btn.icon { width: 40px; padding: 0; }
+.btn.block { width: 100%; }
+.btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+.badge {
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 999px;
+  font-size: 12px; font-weight: 700; text-transform: capitalize; white-space: nowrap;
+}
+.badge.gentle { background: var(--gentle-soft); color: var(--gentle); }
+.badge.firm { background: var(--firm-soft); color: var(--firm); }
+.badge.relentless { background: var(--relentless-soft); color: var(--relentless); }
+.state { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 8px; border-radius: 6px; background: var(--surface-2); color: var(--muted); }
+.state.NAGGING { background: var(--accent-soft); color: var(--accent); }
+.state.ACKED { background: var(--gentle-soft); color: var(--ok); }
+.state.MISSED { background: var(--relentless-soft); color: var(--relentless); }
+
+.api {
+  display: none; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 11.5px;
+  color: var(--quiet); background: var(--quiet-soft); border-radius: 6px; padding: 2px 7px; width: fit-content;
+  max-width: 100%; overflow-wrap: anywhere;
+}
+body.show-api .api { display: inline-block; }
+
+.switch { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; user-select: none; }
+.switch input { appearance: none; width: 34px; height: 20px; border-radius: 10px; background: var(--line); position: relative; margin: 0; cursor: pointer; transition: background .15s; }
+.switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--surface); transition: transform .15s; box-shadow: 0 1px 2px rgb(0 0 0 / .2); }
+.switch input:checked { background: var(--quiet); }
+.switch input:checked::after { transform: translateX(14px); }
+
+/* ---------- Now view ---------- */
+.hello h1 { font-size: 26px; letter-spacing: -0.02em; }
+.hello p { margin: 4px 0 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+.chip.quiet { color: var(--quiet); border-color: color-mix(in srgb, var(--quiet) 30%, var(--line)); }
+
+.nag-grid { display: grid; gap: 14px; grid-template-columns: 1fr; }
+@media (min-width: 700px) { .nag-grid { grid-template-columns: repeat(2, 1fr); } }
+.nag { padding: 16px; display: flex; flex-direction: column; gap: 12px; border-left: 5px solid var(--accent); }
+.nag.s-gentle { border-left-color: var(--gentle); }
+.nag.s-firm { border-left-color: var(--firm); }
+.nag.s-relentless { border-left-color: var(--relentless); }
+.nag-top { display: flex; align-items: flex-start; gap: 10px; }
+.nag-top h3 { font-size: 18px; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.pulse { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); margin-top: 6px; flex: none; box-shadow: 0 0 0 0 var(--accent); animation: pulse 1.6s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 60%, transparent); } 100% { box-shadow: 0 0 0 10px transparent; } }
+@media (prefers-reduced-motion: reduce) { .pulse { animation: none; } .sheet, .toast { transition: none; } }
+.ladder { display: flex; gap: 4px; }
+.ladder span { flex: 1; height: 8px; border-radius: 4px; background: var(--surface-2); }
+.ladder span.on { background: currentColor; }
+.s-gentle .ladder { color: var(--gentle); }
+.s-firm .ladder { color: var(--firm); }
+.s-relentless .ladder { color: var(--relentless); }
+.ladder-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 4px; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0; }
+.stats div { background: var(--surface-2); border-radius: 10px; padding: 8px 10px; min-width: 0; }
+.stats dt { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+.stats dd { margin: 0; font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stats dd small { display: block; font-weight: 500; font-size: 12px; color: var(--muted); white-space: normal; line-height: 1.3; }
+.nag-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.nag-actions .primary { flex: 1; }
+.empty { padding: 28px 16px; text-align: center; color: var(--muted); }
+.empty strong { display: block; color: var(--text); font-size: 17px; margin-bottom: 4px; }
+
+.list { list-style: none; margin: 0; padding: 0; }
+.list > li + li { border-top: 1px solid var(--line); }
+.row {
+  display: grid; grid-template-columns: 64px 1fr auto; align-items: center; gap: 12px; width: 100%;
+  padding: 12px 14px; background: none; border: 0; text-align: left;
+}
+button.row:hover { background: var(--surface-2); }
+.list > li:first-child .row { border-radius: var(--radius) var(--radius) 0 0; }
+.list > li:last-child .row { border-radius: 0 0 var(--radius) var(--radius); }
+.list > li:only-child .row { border-radius: var(--radius); }
+.row .when { font-weight: 700; font-size: 15px; line-height: 1.2; }
+.row .when small { display: block; font-weight: 500; font-size: 12px; color: var(--muted); }
+.row .what { min-width: 0; }
+.row .what strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.row .what span { display: block; font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.note-quiet, .row .what .note-quiet { color: var(--quiet); }
+.note-carry, .row .what .note-carry { color: var(--firm); }
+
+/* ---------- Reminders view ---------- */
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 8px; }
+.search { flex: 1 1 220px; display: flex; align-items: center; gap: 8px; padding: 0 12px; height: 42px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); }
+.search input { border: 0; background: none; outline: none; width: 100%; height: 100%; }
+.seg { display: inline-flex; background: var(--surface-2); border-radius: 10px; padding: 3px; gap: 2px; overflow-x: auto; max-width: 100%; }
+.seg button { border: 0; background: none; padding: 6px 12px; border-radius: 8px; font-size: 14px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+.rem-grid { display: grid; gap: 12px; grid-template-columns: 1fr; margin-top: 16px; }
+@media (min-width: 700px) { .rem-grid { grid-template-columns: repeat(2, 1fr); } }
+.rem { padding: 14px 16px; text-align: left; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.rem:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+.rem-head { display: flex; gap: 10px; align-items: flex-start; }
+.rem-title { flex: 1; font-size: 16px; min-width: 0; overflow-wrap: anywhere; }
+.rem .sched { font-size: 14px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.rem .next { font-size: 14px; display: flex; justify-content: space-between; gap: 8px; border-top: 1px dashed var(--line); padding-top: 8px; }
+.rem.done { opacity: 0.65; }
+
+/* ---------- Sheet ---------- */
+.scrim { position: fixed; inset: 0; background: rgb(0 0 0 / 0.35); z-index: 40; opacity: 0; pointer-events: none; transition: opacity .2s; }
+.scrim.open { opacity: 1; pointer-events: auto; }
+.sheet {
+  position: fixed; z-index: 50; background: var(--surface); box-shadow: 0 -8px 40px rgb(0 0 0 / .2);
+  left: 0; right: 0; bottom: 0; max-height: 92dvh; border-radius: 20px 20px 0 0;
+  transform: translateY(100%); transition: transform .25s ease; display: flex; flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.sheet.open { transform: none; }
+.sheet-head { display: flex; align-items: flex-start; gap: 10px; padding: 16px 16px 12px; border-bottom: 1px solid var(--line); }
+.sheet-head h2 { flex: 1; font-size: 20px; min-width: 0; overflow-wrap: anywhere; }
+.grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 8px auto 0; }
+.sheet-body { overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 20px; }
+@media (min-width: 860px) {
+  .sheet { left: auto; top: 0; width: 440px; max-height: none; border-radius: 0; transform: translateX(100%); box-shadow: -8px 0 40px rgb(0 0 0 / .15); }
+  .grab { display: none; }
+  .sheet-head { padding-top: 22px; }
+}
+.kv { display: grid; grid-template-columns: 110px 1fr; gap: 6px 12px; margin: 0; font-size: 14px; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.sub-h { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; margin-bottom: 8px; }
+.occ { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.occ + .occ { margin-top: 8px; }
+.occ > button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: none; border: 0; text-align: left; }
+.occ > button:hover { background: var(--surface-2); }
+.occ > button .grow { flex: 1; min-width: 0; }
+.occ > button .grow small { display: block; color: var(--muted); font-size: 12px; }
+.chev { transition: transform .15s; color: var(--muted); }
+.occ[data-open="true"] .chev { transform: rotate(90deg); }
+.timeline { list-style: none; margin: 0; padding: 4px 12px 12px 30px; position: relative; }
+.timeline::before { content: ""; position: absolute; left: 17px; top: 10px; bottom: 18px; width: 2px; background: var(--line); }
+.ev { position: relative; padding: 6px 0; font-size: 14px; }
+.ev::before { content: ""; position: absolute; left: -17px; top: 12px; width: 10px; height: 10px; border-radius: 50%; background: var(--surface); border: 2px solid var(--muted); }
+.ev.NAG_SENT::before { border-color: var(--accent); background: var(--accent); }
+.ev.ACKED::before { border-color: var(--ok); background: var(--ok); }
+.ev.MISSED::before, .ev.SEND_FAILED::before { border-color: var(--relentless); background: var(--relentless); }
+.ev.DEFERRED_QUIET::before { border-color: var(--quiet); background: var(--quiet); }
+.timeline time { font-weight: 700; margin-right: 6px; font-variant-numeric: tabular-nums; }
+.timeline .ev-note { display: block; color: var(--muted); font-size: 12px; }
+
+/* ---------- Escalation chart ---------- */
+.esc { display: flex; flex-direction: column; gap: 5px; }
+.esc-row { display: grid; grid-template-columns: 34px 1fr 64px 30px; align-items: center; gap: 8px; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.esc-row .n { color: var(--muted); }
+.esc-row .bar { height: 12px; border-radius: 4px; background: var(--surface-2); position: relative; overflow: hidden; }
+.esc-row .bar i { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: currentColor; opacity: .85; }
+.esc-row .pr { font-weight: 700; text-align: right; }
+.esc.gentle { color: var(--gentle); }
+.esc.firm { color: var(--firm); }
+.esc.relentless { color: var(--relentless); }
+.esc .t { color: var(--text); text-align: right; }
+.esc .pr { color: var(--text); }
+.esc-more { font-size: 12px; color: var(--muted); padding-left: 42px; }
+
+/* ---------- Form ---------- */
+.form-grid { display: grid; gap: 20px; grid-template-columns: 1fr; margin-top: 8px; }
+@media (min-width: 980px) { .form-grid { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: start; } .preview-col { position: sticky; top: 86px; } }
+.panel { padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field > label, .field > .label { font-weight: 600; font-size: 14px; }
+.field .hint { font-size: 12.5px; color: var(--muted); }
+.field .err { font-size: 12.5px; color: var(--relentless); font-weight: 600; }
+.input, select.input, textarea.input {
+  width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--bg); outline: none;
+}
+.input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.input[aria-invalid="true"] { border-color: var(--relentless); }
+textarea.input { min-height: 72px; resize: vertical; }
+.two { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 520px) { .two { grid-template-columns: 1fr 1fr; } }
+.strengths { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.strengths label { position: relative; }
+.strengths input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.strengths .opt { display: flex; flex-direction: column; gap: 2px; padding: 10px; border-radius: 12px; border: 2px solid var(--line); background: var(--bg); height: 100%; }
+.strengths .opt b { font-size: 15px; }
+.opt-desc { font-size: 12px; color: var(--muted); line-height: 1.3; }
+.strengths input:checked + .opt.gentle { border-color: var(--gentle); background: var(--gentle-soft); }
+.strengths input:checked + .opt.firm { border-color: var(--firm); background: var(--firm-soft); }
+.strengths input:checked + .opt.relentless { border-color: var(--relentless); background: var(--relentless-soft); }
+.strengths input:focus-visible + .opt { outline: 2px solid var(--accent); outline-offset: 2px; }
+details.adv summary { cursor: pointer; font-weight: 600; font-size: 14px; color: var(--muted); }
+details.adv[open] summary { margin-bottom: 12px; }
+.builder { border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin: 4px 0 0; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.b-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.b-row label, .b-label { font-weight: 600; font-size: 14px; }
+.b-block { display: flex; flex-direction: column; gap: 8px; }
+.input.num { width: 84px; }
+.input.unit { width: auto; flex: 1 1 120px; max-width: 180px; }
+.input.inline { width: auto; min-height: 38px; padding: 6px 10px; }
+.input.inline.num { width: 76px; }
+.input:disabled { opacity: 0.5; }
+.radio { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 15px; min-height: 38px; cursor: pointer; }
+.radio input[type="radio"] { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+.daypick { display: grid; grid-template-columns: repeat(7, minmax(0, 40px)); gap: 6px; }
+.daypick label { position: relative; }
+.daypick input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.daypick span[aria-hidden] { display: grid; place-items: center; width: 100%; aspect-ratio: 1; border-radius: 50%; border: 1px solid var(--line); background: var(--bg); font-weight: 700; font-size: 14px; color: var(--muted); }
+.daypick input:checked + span { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.daypick input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.repeat-sum { display: flex; flex-direction: column; gap: 6px; font-size: 14px; background: var(--surface-2); border-radius: 10px; padding: 10px 12px; }
+.next-dates { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.date-chip { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 1px 9px; font-size: 13px; font-variant-numeric: tabular-nums; }
+.summary-line { font-size: 14px; background: var(--surface-2); padding: 10px 12px; border-radius: 10px; }
+.phone-notif { background: var(--surface-2); border-radius: 16px; padding: 12px 14px; display: flex; gap: 12px; align-items: flex-start; }
+.phone-notif .app-ic { width: 34px; height: 34px; border-radius: 9px; background: #317f6f; color: #fff; display: grid; place-items: center; font-weight: 800; flex: none; font-size: 14px; }
+.phone-notif .body { flex: 1; min-width: 0; }
+.phone-notif .top { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+.phone-notif .ttl { font-weight: 700; overflow-wrap: anywhere; }
+.phone-notif .acts { display: flex; gap: 14px; margin-top: 6px; font-size: 13px; font-weight: 700; color: var(--accent); }
+pre.json { margin: 0; padding: 12px; background: var(--surface-2); border-radius: 10px; font-size: 12px; overflow-x: auto; white-space: pre; }
+
+/* ---------- Settings ---------- */
+.settings { display: grid; gap: 16px; max-width: 640px; margin-top: 8px; }
+.day-ribbon { position: relative; height: 34px; border-radius: 8px; background: var(--surface-2); overflow: hidden; margin-top: 4px; }
+.day-ribbon .q { position: absolute; top: 0; bottom: 0; background: var(--quiet-soft); border-left: 2px solid var(--quiet); border-right: 2px solid var(--quiet); }
+.day-ribbon .nowline { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent); }
+.ribbon-scale { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 4px; font-variant-numeric: tabular-nums; }
+.keybox { display: flex; gap: 8px; align-items: center; }
+.keybox .input { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 13px; }
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed; left: 50%; bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 14px); transform: translate(-50%, 20px);
+  background: var(--text); color: var(--bg); padding: 10px 14px; border-radius: 12px; box-shadow: var(--shadow);
+  z-index: 60; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; width: max-content; max-width: calc(100vw - 32px);
+  display: flex; flex-direction: column; gap: 2px; font-size: 14px; font-weight: 600;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast code { font-weight: 500; opacity: .75; font-size: 12px; }
+@media (min-width: 860px) { .toast { bottom: 24px; left: calc(50% + 116px); } }
+
+/* ---------- Groups & My Day ---------- */
+.api.proposed { color: var(--firm); background: var(--firm-soft); }
+.api.proposed::before { content: "proposed · "; font-weight: 700; }
+.gchip { display: inline-flex; align-items: center; gap: 5px; font-style: normal; font-size: 12px; font-weight: 600; color: var(--gc); background: color-mix(in srgb, var(--gc) 13%, transparent); padding: 1px 8px 1px 6px; border-radius: 999px; white-space: nowrap; }
+.gc-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gc); }
+.gdot { width: 12px; height: 12px; border-radius: 4px; background: var(--gc); flex: none; }
+.group-grid { display: grid; gap: 12px; grid-template-columns: 1fr; margin-top: 12px; }
+@media (min-width: 700px) { .group-grid { grid-template-columns: repeat(2, 1fr); } }
+.gcard { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; color: inherit; text-decoration: none; border-top: 4px solid var(--gc); }
+.gcard:hover { border-color: color-mix(in srgb, var(--gc) 50%, var(--line)); border-top-color: var(--gc); }
+.gcard-head { display: flex; align-items: center; gap: 8px; }
+.gcard-name { flex: 1; font-size: 17px; min-width: 0; overflow-wrap: anywhere; }
+.gcard-count { display: flex; gap: 10px; align-items: baseline; font-size: 14px; color: var(--muted); }
+.gcard-num { font-size: 22px; color: var(--text); font-variant-numeric: tabular-nums; }
+.gnag { color: var(--accent); font-weight: 700; }
+.gdone { color: var(--ok); font-weight: 700; }
+.gmini { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.gmini-item { display: flex; gap: 8px; min-width: 0; }
+.gmini-time { font-weight: 700; font-variant-numeric: tabular-nums; width: 42px; flex: none; }
+.gmini-item.st-NAGGING { color: var(--accent); }
+.back { display: inline-block; color: var(--muted); text-decoration: none; font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+.back:hover { color: var(--text); }
+.gtitle { display: flex; align-items: center; gap: 10px; font-size: 24px; min-width: 0; overflow-wrap: anywhere; }
+a.row { color: inherit; text-decoration: none; }
+a.row:hover { background: var(--surface-2); }
+.row .what .tchips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; white-space: normal; overflow: visible; }
+.tchip { font-style: normal; font-size: 11.5px; font-weight: 600; padding: 0 6px; border-radius: 6px; background: var(--surface-2); color: var(--muted); font-variant-numeric: tabular-nums; border: 1px solid transparent; }
+.tchip.ACKED { color: var(--ok); }
+.tchip.NAGGING { background: var(--accent-soft); color: var(--accent); }
+.tchip.MISSED { color: var(--relentless); }
+.tchip.next { border-color: var(--text); color: var(--text); }
+.swatches { display: flex; gap: 8px; flex-wrap: wrap; }
+.swatches label { position: relative; }
+.swatches input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.swatches span[aria-hidden] { display: block; width: 32px; height: 32px; border-radius: 50%; background: var(--gc); border: 3px solid var(--surface); box-shadow: 0 0 0 1px var(--line); }
+.swatches input:checked + span { box-shadow: 0 0 0 2px var(--text); }
+.swatches input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+.daysum { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+.dsum-nums { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.dsum-nums div { display: flex; flex-direction: column; align-items: center; }
+.dsum-n { font-size: 24px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.dsum-l { font-size: 12px; color: var(--muted); }
+.dsum-nums .ok .dsum-n { color: var(--ok); }
+.dsum-nums .acc .dsum-n { color: var(--accent); }
+.dsum-nums .bad .dsum-n { color: var(--relentless); }
+.dbar { display: flex; gap: 3px; height: 8px; }
+.dbar-seg { border-radius: 4px; }
+.dbar .ok { background: var(--ok); }
+.dbar .acc { background: var(--accent); }
+.dbar .bad { background: var(--relentless); }
+.dbar .rest { background: var(--surface-2); }
+.gfilter { display: flex; gap: 6px; overflow-x: auto; padding: 14px 0 12px; scrollbar-width: none; }
+.gfilter button { display: inline-flex; align-items: center; gap: 6px; flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 12px; font-size: 14px; font-weight: 600; }
+.gfilter button[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+.gfilter button[aria-pressed="true"] .muted { color: inherit; opacity: 0.7; }
+.day-list { list-style: none; margin: 0; padding: 6px 0; }
+.drow, .dmark { display: grid; grid-template-columns: 46px 16px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 0 14px; }
+.dtime { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; font-size: 15px; }
+.dline { align-self: stretch; position: relative; }
+.dline::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; transform: translateX(-50%); background: var(--line); }
+.day-list > li:first-child .dline::before { top: 50%; }
+.day-list > li:last-child .dline::before { bottom: 50%; }
+.dline-dot { position: absolute; left: 50%; top: 50%; width: 12px; height: 12px; border-radius: 50%; transform: translate(-50%, -50%); background: var(--surface); border: 2px solid var(--gc, var(--muted)); }
+.st-ACKED .dline-dot { background: var(--ok); border-color: var(--ok); }
+.st-NAGGING .dline-dot { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.st-MISSED .dline-dot { background: var(--relentless); border-color: var(--relentless); }
+.dmain { background: none; border: 0; text-align: left; padding: 10px 0; min-width: 0; display: flex; flex-direction: column; gap: 4px; border-radius: 8px; }
+.dmain-title { font-weight: 600; overflow-wrap: anywhere; }
+.st-ACKED .dtime, .st-ACKED .dmain-title { color: var(--muted); }
+.dmain:hover .dmain-title { text-decoration: underline; }
+.dmeta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12.5px; color: var(--muted); }
+.st-NAGGING .dmeta > span:last-child { color: var(--accent); font-weight: 600; }
+.btn.sm { min-height: 34px; padding: 4px 12px; font-size: 14px; }
+.dmark { min-height: 32px; font-size: 13px; font-weight: 700; color: var(--muted); }
+.dmark .dtime { font-size: 13px; }
+.dmark .dline-dot { width: 8px; height: 8px; border: 0; background: var(--muted); }
+.dmark .dlabel { grid-column: span 2; display: flex; align-items: center; gap: 8px; }
+.dmark.now, .dmark.now .dtime { color: var(--accent); }
+.dmark.now .dline-dot { width: 10px; height: 10px; background: var(--accent); }
+.dmark.now .dlabel::after { content: ""; flex: 1; height: 2px; background: var(--accent); opacity: 0.35; }
+.dmark.quiet, .dmark.quiet .dtime { color: var(--quiet); }
+.dmark.quiet .dline-dot { background: var(--quiet); border-radius: 2px; }
+.mock-banner { font-size: 12px; color: var(--muted); text-align: center; padding: 8px 16px; border-bottom: 1px dashed var(--line); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="sidebar" aria-label="Main">
+    <div class="brand">Nudge-A-Tron <span>5000</span><small>Nagging reminders</small></div>
+    <ul class="nav" id="nav"></ul>
+    <div class="sidebar-foot">
+      <div id="foot-user"></div>
+      <div class="tiny">Mockup · data is fake</div>
+    </div>
+  </nav>
+
+  <main>
+    <header class="topbar">
+      <div class="who">
+        <div class="mobile-logo">Nudge-A-Tron <span>5000</span></div>
+      </div>
+      <div class="top-actions">
+        <label class="switch" title="Show the /v0 API call behind each part of the UI">
+          <input type="checkbox" id="api-toggle"> API
+        </label>
+        <button type="button" class="btn icon ghost" id="theme-btn" aria-label="Toggle colour theme">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        </button>
+      </div>
+    </header>
+    <div id="view"></div>
+  </main>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" hidden></aside>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+
+/* ================= Mock clock & formatting =================
+   All times are wall-clock times in the user's zone. The page pretends "now"
+   is Monday 28 Sep 2026, 08:20, so the mock data tells a consistent story. */
+const L = (s) => {
+  const [d, t = "00:00"] = s.split("T");
+  const [y, m, dd] = d.split("-").map(Number);
+  const [h, mi, se = 0] = t.split(":").map(Number);
+  return new Date(y, m - 1, dd, h, mi, se);
+};
+const NOW = L("2026-09-28T08:20");
+const pad = (n) => String(n).padStart(2, "0");
+const hm = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+function dayLabel(d) {
+  const a = new Date(NOW); a.setHours(0, 0, 0, 0);
+  const b = new Date(d); b.setHours(0, 0, 0, 0);
+  const diff = Math.round((b - a) / 864e5);
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Tomorrow";
+  if (diff === -1) return "Yesterday";
+  return `${DAYS[d.getDay()]} ${d.getDate()} ${MON[d.getMonth()]}`;
+}
+const when = (d) => `${dayLabel(d)} ${hm(d)}`;
+function rel(d) {
+  const m = Math.round((d - NOW) / 6e4), a = Math.abs(m);
+  if (a < 1) return "now";
+  const s = a < 60 ? `${a} min` : a < 48 * 60 ? `${Math.round(a / 60)} h` : `${Math.round(a / 1440)} days`;
+  return m > 0 ? `in ${s}` : `${s} ago`;
+}
+const fmtMin = (x) => (x >= 60 && x % 60 === 0 ? `${x / 60} h` : `${+x.toFixed(1)} min`);
+const fmtDur = (m) => (m < 60 ? `${Math.round(m)} min` : `${+(m / 60).toFixed(1)} h`);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+
+/* ================= Strength profiles (ADR 0005, src/domain/escalation.ts) ================= */
+const PROFILES = {
+  gentle:     { initial: 60, factor: 0.75, floor: 20, min: 3, max: 4, blurb: "Hourly at first, easing to every 20 min" },
+  firm:       { initial: 30, factor: 0.5,  floor: 5,  min: 3, max: 5, blurb: "Every 30 min, down to every 5" },
+  relentless: { initial: 10, factor: 0.5,  floor: 2,  min: 4, max: 5, blurb: "Every 10 min, down to every 2" },
+};
+const DEFAULT_CAP = { maxDurationMinutes: 1440, maxAttempts: 20 };
+function maxLevel(s) { const p = PROFILES[s]; let l = 0; while (p.initial * p.factor ** l > p.floor) l++; return l; }
+function intervalAt(s, l) { const p = PROFILES[s]; const x = Math.max(p.floor, p.initial * p.factor ** Math.min(l, maxLevel(s))); return Math.round(x * 60) / 60; }
+function priorityAt(s, l) { const p = PROFILES[s], top = maxLevel(s); return p.min + Math.floor(((p.max - p.min) * Math.min(l, top)) / top); }
+/* Nag schedule for one occurrence starting at `startLevel`, ignoring quiet hours. */
+function simulate(s, cap = {}, startLevel = 0) {
+  const maxAtt = cap.maxAttempts ?? DEFAULT_CAP.maxAttempts;
+  const maxDur = cap.maxDurationMinutes ?? DEFAULT_CAP.maxDurationMinutes;
+  const nags = []; let t = 0;
+  while (nags.length < maxAtt && t < maxDur) {
+    const level = Math.min(startLevel + nags.length, maxLevel(s));
+    const iv = intervalAt(s, level);
+    nags.push({ at: t, level, priority: priorityAt(s, level), interval: iv });
+    t = Math.min(t + iv, maxDur);
+  }
+  return { nags, giveUpAt: t, byAttempts: nags.length >= maxAtt };
+}
+
+/* ================= Mock data (shapes follow openapi/v0.json) ================= */
+const me = { id: "0199921a-3c40-7e21-9a0b-5d8e2f10c001", name: "Sam Rivera", timezone: "America/New_York", quietHours: { start: "22:00", end: "07:00" } };
+const uid = (() => { let n = 0x20; return () => `0199921a-${(n++).toString(16).padStart(4, "0")}-7abc-8def-${Math.random().toString(16).slice(2, 14).padEnd(12, "0")}`; })();
+
+/* Groups are a proposed addition: a `groups` resource and an optional `groupId` on reminders. */
+const groups = [
+  { id: "home", name: "Home", color: "g1" },
+  { id: "health", name: "Health", color: "g3" },
+  { id: "work", name: "Work", color: "g4" },
+  { id: "money", name: "Money & paperwork", color: "g2" },
+];
+
+let reminders = [
+  { id: "r1", groupId: "home", title: "Take the bins out", body: null, dtstart: "2026-01-05T07:30", timezone: me.timezone, rrule: "FREQ=WEEKLY;BYDAY=MO", strength: "firm", cap: {}, status: "ACTIVE", nextOccurrenceAt: "2026-10-05T07:30", schedule: "Every Monday at 07:30" },
+  { id: "r7", groupId: "money", title: "Reply to Alex about the lease", body: "They need an answer before 10.", dtstart: "2026-09-28T08:10", timezone: me.timezone, rrule: null, strength: "relentless", cap: { maxDurationMinutes: 120 }, status: "ACTIVE", nextOccurrenceAt: null, schedule: "Once, today at 08:10" },
+  { id: "r2", groupId: "health", title: "Morning meds", body: "Blue pill + vitamin D", dtstart: "2026-03-01T06:30", timezone: me.timezone, rrule: "FREQ=DAILY", strength: "gentle", cap: {}, status: "ACTIVE", nextOccurrenceAt: "2026-09-29T06:30", schedule: "Every day at 06:30" },
+  { id: "r6", groupId: "health", title: "Stretch break", body: null, dtstart: "2026-09-01T10:00", timezone: me.timezone, rrule: "FREQ=DAILY;BYHOUR=10,14,16;BYMINUTE=0", strength: "gentle", cap: { maxDurationMinutes: 60 }, status: "ACTIVE", nextOccurrenceAt: "2026-09-28T10:00", schedule: "Daily at 10:00, 14:00 and 16:00" },
+  { id: "r3", groupId: "home", title: "Water the plants", body: null, dtstart: "2026-04-02T18:00", timezone: me.timezone, rrule: "FREQ=WEEKLY;BYDAY=MO,TH", strength: "gentle", cap: {}, status: "ACTIVE", nextOccurrenceAt: "2026-09-28T18:00", schedule: "Mondays and Thursdays at 18:00" },
+  { id: "r4", groupId: "money", title: "Pay rent", body: "Transfer to the landlord's account.", dtstart: "2026-01-01T09:00", timezone: me.timezone, rrule: "FREQ=MONTHLY;BYMONTHDAY=1", strength: "relentless", cap: { maxDurationMinutes: 480, maxAttempts: 60 }, status: "ACTIVE", nextOccurrenceAt: "2026-10-01T09:00", schedule: "Monthly on the 1st at 09:00" },
+  { id: "r5", groupId: "health", title: "Dentist appointment", body: "Bring the insurance card.", dtstart: "2026-10-02T13:15", timezone: me.timezone, rrule: null, strength: "firm", cap: {}, status: "ACTIVE", nextOccurrenceAt: "2026-10-02T13:15", schedule: "Once, Fri 2 Oct at 13:15" },
+  { id: "r8", groupId: "money", title: "Renew passport", body: null, dtstart: "2026-09-10T09:00", timezone: me.timezone, rrule: null, strength: "firm", cap: {}, status: "COMPLETED", nextOccurrenceAt: null, schedule: "Once, Thu 10 Sep at 09:00" },
+  { id: "r9", groupId: "work", title: "Team stand-up", body: "Join from the meeting link in the calendar invite.", dtstart: "2026-01-05T09:30", timezone: me.timezone, rrule: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR", strength: "firm", cap: { maxDurationMinutes: 30 }, status: "ACTIVE", nextOccurrenceAt: "2026-09-28T09:30", schedule: "Every weekday at 09:30" },
+  { id: "r10", groupId: "work", title: "Send the weekly status update", body: null, dtstart: "2026-01-05T16:30", timezone: me.timezone, rrule: "FREQ=WEEKLY;BYDAY=MO", strength: "gentle", cap: {}, status: "ACTIVE", nextOccurrenceAt: "2026-09-28T16:30", schedule: "Every Monday at 16:30" },
+  { id: "r11", groupId: "home", title: "Walk the dog", body: null, dtstart: "2026-02-01T07:00", timezone: me.timezone, rrule: "FREQ=DAILY", strength: "gentle", cap: {}, status: "ACTIVE", nextOccurrenceAt: "2026-09-29T07:00", schedule: "Every day at 07:00" },
+];
+
+const ev = (type, at, data = {}) => ({ id: uid(), type, at, data });
+const occurrences = [
+  { id: "o1", reminderId: "r1", scheduledFor: "2026-09-28T07:30", level: 2, attempts: 3, state: "NAGGING", nextNagAt: "2026-09-28T08:22:30", closedAt: null, closeReason: null,
+    events: [ev("SCHEDULED", "2026-09-28T07:30"), ev("NAG_SENT", "2026-09-28T07:30", { attempt: 1, level: 0, priority: 3 }), ev("NAG_SENT", "2026-09-28T08:00", { attempt: 2, level: 1, priority: 3 }), ev("NAG_SENT", "2026-09-28T08:15", { attempt: 3, level: 2, priority: 4 })] },
+  { id: "o3", reminderId: "r7", scheduledFor: "2026-09-28T08:10", level: 1, attempts: 2, state: "NAGGING", nextNagAt: "2026-09-28T08:25", closedAt: null, closeReason: null,
+    events: [ev("SCHEDULED", "2026-09-28T08:10"), ev("NAG_SENT", "2026-09-28T08:10", { attempt: 1, level: 0, priority: 4 }), ev("NAG_SENT", "2026-09-28T08:20", { attempt: 2, level: 1, priority: 4 })] },
+  { id: "o4", reminderId: "r2", scheduledFor: "2026-09-28T06:30", level: 0, attempts: 1, state: "ACKED", nextNagAt: null, closedAt: "2026-09-28T07:04", closeReason: null,
+    events: [ev("SCHEDULED", "2026-09-28T06:30"), ev("DEFERRED_QUIET", "2026-09-28T06:30", { until: "2026-09-28T07:00" }), ev("NAG_SENT", "2026-09-28T07:00", { attempt: 1, level: 0, priority: 3 }), ev("ACKED", "2026-09-28T07:04")] },
+  { id: "o6", reminderId: "r6", scheduledFor: "2026-09-27T16:00", level: 0, attempts: 1, state: "MISSED", nextNagAt: null, closedAt: "2026-09-27T17:00", closeReason: "cap",
+    events: [ev("SCHEDULED", "2026-09-27T16:00"), ev("NAG_SENT", "2026-09-27T16:00", { attempt: 1, level: 0, priority: 3 }), ev("MISSED", "2026-09-27T17:00", { reason: "cap" })] },
+  { id: "o2", reminderId: "r1", scheduledFor: "2026-09-21T07:30", level: 0, attempts: 1, state: "ACKED", nextNagAt: null, closedAt: "2026-09-21T07:52", closeReason: null,
+    events: [ev("SCHEDULED", "2026-09-21T07:30"), ev("NAG_SENT", "2026-09-21T07:30", { attempt: 1, level: 0, priority: 3 }), ev("ACKED", "2026-09-21T07:52")] },
+  { id: "o5", reminderId: "r2", scheduledFor: "2026-09-27T06:30", level: 0, attempts: 1, state: "ACKED", nextNagAt: null, closedAt: "2026-09-27T07:11", closeReason: null },
+  { id: "o7", reminderId: "r6", scheduledFor: "2026-09-27T14:00", level: 0, attempts: 1, state: "ACKED", nextNagAt: null, closedAt: "2026-09-27T14:06", closeReason: null },
+  { id: "o8", reminderId: "r3", scheduledFor: "2026-09-24T18:00", level: 0, attempts: 1, state: "ACKED", nextNagAt: null, closedAt: "2026-09-24T18:21", closeReason: null },
+  { id: "o9", reminderId: "r3", scheduledFor: "2026-09-21T18:00", level: 4, attempts: 20, state: "MISSED", nextNagAt: null, closedAt: "2026-09-22T11:00", closeReason: "cap" },
+  { id: "o10", reminderId: "r4", scheduledFor: "2026-09-01T09:00", level: 2, attempts: 3, state: "ACKED", nextNagAt: null, closedAt: "2026-09-01T09:16", closeReason: null,
+    events: [ev("SCHEDULED", "2026-09-01T09:00"), ev("NAG_SENT", "2026-09-01T09:00", { attempt: 1, level: 0, priority: 4 }), ev("NAG_SENT", "2026-09-01T09:10", { attempt: 2, level: 1, priority: 4 }), ev("NAG_SENT", "2026-09-01T09:15", { attempt: 3, level: 2, priority: 4 }), ev("ACKED", "2026-09-01T09:16")] },
+  { id: "o12", reminderId: "r11", scheduledFor: "2026-09-28T07:00", level: 0, attempts: 1, state: "ACKED", nextNagAt: null, closedAt: "2026-09-28T07:18", closeReason: null,
+    events: [ev("SCHEDULED", "2026-09-28T07:00"), ev("NAG_SENT", "2026-09-28T07:00", { attempt: 1, level: 0, priority: 3 }), ev("ACKED", "2026-09-28T07:18")] },
+  { id: "o11", reminderId: "r8", scheduledFor: "2026-09-10T09:00", level: 1, attempts: 2, state: "ACKED", nextNagAt: null, closedAt: "2026-09-10T09:41", closeReason: null },
+];
+
+const remById = (id) => reminders.find((r) => r.id === id);
+const occsOf = (rid) => occurrences.filter((o) => o.reminderId === rid).sort((a, b) => L(b.scheduledFor) - L(a.scheduledFor));
+const openOccs = () => occurrences.filter((o) => o.state === "NAGGING" || o.state === "PENDING");
+
+/* Quiet hours: [start, end) in local time; start > end crosses midnight. */
+const toMin = (hhmm) => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + m; };
+function inQuiet(d, q = me.quietHours) {
+  if (!q) return false;
+  const t = d.getHours() * 60 + d.getMinutes(), s = toMin(q.start), e = toMin(q.end);
+  return s <= e ? t >= s && t < e : t >= s || t < e;
+}
+/* Level the next occurrence starts at (carry-over rule, ADR 0005). */
+function startLevelFor(r) {
+  const last = occsOf(r.id).find((o) => o.state !== "NAGGING" && o.state !== "PENDING");
+  if (!last || last.state === "ACKED") return 0;
+  return Math.min(last.attempts > 0 ? last.level + 1 : last.level, maxLevel(r.strength));
+}
+
+/* ================= State & routing ================= */
+const VIEWS = ["now", "day", "groups", "new", "settings"];
+const state = { view: "now", q: "", sheet: null, openOcc: new Set(), draft: null, errors: {}, group: null, dayGroup: "all", addingGroup: false, groupErr: "", newIn: null };
+/* #g-<id> opens a group; #groups is the list. */
+function currentView() {
+  const h = location.hash.slice(1);
+  if (h.startsWith("g-")) { if (state.group !== h.slice(2)) state.q = ""; state.group = h.slice(2); return "groups"; }
+  if (h === "groups") state.group = null;
+  return VIEWS.includes(h) ? h : "now";
+}
+
+const ICONS = {
+  now: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  day: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/>',
+  groups: '<path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/>',
+  new: '<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+};
+const icon = (k, sz = 22) => `<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[k]}</svg>`;
+const LABELS = { now: "Now", day: "My Day", groups: "Groups", new: "New", settings: "Settings" };
+
+function renderNav() {
+  const n = openOccs().length;
+  document.getElementById("nav").innerHTML = VIEWS.map((v) => `
+    <li><a href="#${v}" ${state.view === v ? 'aria-current="page"' : ""}>${icon(v)}<span>${LABELS[v]}${v === "now" && n ? `<span class="count" aria-label="${n} nagging">${n}</span>` : ""}</span></a></li>`).join("");
+  document.getElementById("foot-user").innerHTML = `<strong>${esc(me.name)}</strong><br>${esc(me.timezone)}`;
+}
+
+function render() {
+  state.view = currentView();
+  renderNav();
+  const v = document.getElementById("view");
+  v.innerHTML = { now: viewNow, day: viewDay, groups: viewGroups, new: viewNew, settings: viewSettings }[state.view]();
+  if (state.view === "new") bindNew();
+  if (state.view === "settings") bindSettings();
+  if (state.view === "groups") bindGroups();
+}
+
+/* ================= View: Now ================= */
+function nagCard(o) {
+  const r = remById(o.reminderId), top = maxLevel(r.strength), cap = { ...DEFAULT_CAP, ...r.cap };
+  const nextP = priorityAt(r.strength, o.level + 1), curP = priorityAt(r.strength, o.level);
+  const segs = Array.from({ length: top + 1 }, (_, i) => `<span class="${i <= o.level ? "on" : ""}"></span>`).join("");
+  return `
+  <article class="card nag s-${r.strength}">
+    <div class="nag-top">
+      <span class="pulse" aria-hidden="true"></span>
+      <h3>${esc(r.title)}</h3>
+      <span class="badge ${r.strength}">${r.strength}</span>
+    </div>
+    <div class="small muted" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">${gchip(r.groupId)}<span>Due ${hm(L(o.scheduledFor))} · ${rel(L(o.scheduledFor))}${r.body ? ` · ${esc(r.body)}` : ""}</span></div>
+    <div>
+      <div class="ladder" role="img" aria-label="Escalation level ${o.level} of ${top}">${segs}</div>
+      <div class="ladder-label"><span>Level ${o.level} of ${top}</span><span>${o.level >= top ? "Max intensity" : `Getting louder`}</span></div>
+    </div>
+    <dl class="stats">
+      <div><dt>Next nag</dt><dd>${hm(L(o.nextNagAt))}<small>${rel(L(o.nextNagAt))}</small></dd></div>
+      <div><dt>Nags sent</dt><dd>${o.attempts} / ${cap.maxAttempts}<small>gives up after ${fmtDur(cap.maxDurationMinutes)}</small></dd></div>
+      <div><dt>Priority</dt><dd>P${curP}${nextP > curP ? ` → P${nextP}` : ""}<small>ntfy</small></dd></div>
+    </dl>
+    <div class="nag-actions">
+      <button class="btn primary" data-ack="${o.id}">✓ Done, stop nagging</button>
+      <button class="btn" data-open="${r.id}">Details</button>
+    </div>
+    <code class="api">POST /v0/occurrences/${o.id}/ack</code>
+  </article>`;
+}
+function viewNow() {
+  const nag = openOccs().sort((a, b) => L(a.nextNagAt) - L(b.nextNagAt));
+  const horizon = new Date(NOW.getTime() + 7 * 864e5);
+  const upcoming = reminders.filter((r) => r.status === "ACTIVE" && r.nextOccurrenceAt && L(r.nextOccurrenceAt) <= horizon)
+    .sort((a, b) => L(a.nextOccurrenceAt) - L(b.nextOccurrenceAt));
+  const dayAgo = new Date(NOW.getTime() - 864e5);
+  const closed = occurrences.filter((o) => o.closedAt && L(o.closedAt) >= dayAgo).sort((a, b) => L(b.closedAt) - L(a.closedAt));
+  const q = me.quietHours;
+  const hour = NOW.getHours();
+  const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+
+  return `
+  <section class="hello">
+    <h1>${greet}, ${esc(me.name.split(" ")[0])}</h1>
+    <p class="muted">${DAYS[NOW.getDay()]} ${NOW.getDate()} ${MON[NOW.getMonth()]}, ${hm(NOW)} · ${nag.length ? `<strong style="color:var(--accent)">${nag.length} reminder${nag.length > 1 ? "s are" : " is"} nagging you</strong>` : "Nothing is nagging you"}</p>
+    <div class="chips">
+      <span class="chip">🌐 ${esc(me.timezone)}</span>
+      ${q ? `<span class="chip quiet">🌙 Quiet ${q.start}–${q.end}${inQuiet(NOW) ? " · on now" : ""}</span>` : ""}
+      <code class="api">GET /v0/me</code>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="h-nag">
+    <div class="section-head"><h2 id="h-nag">Nagging now</h2><code class="api">GET /v0/reminders → GET /v0/reminders/{id}/occurrences</code></div>
+    ${nag.length ? `<div class="nag-grid">${nag.map(nagCard).join("")}</div>`
+      : `<div class="card empty"><strong>All clear 🎉</strong>Nothing needs you right now.</div>`}
+  </section>
+
+  <section class="section" aria-labelledby="h-up">
+    <div class="section-head"><h2 id="h-up">Coming up</h2><span class="small muted">next 7 days</span></div>
+    <ul class="list card">${upcoming.map((r) => {
+      const d = L(r.nextOccurrenceAt), sl = startLevelFor(r);
+      const notes = [];
+      if (inQuiet(d)) notes.push(`<span class="note-quiet">🌙 Quiet hours, first nag at ${me.quietHours.end}</span>`);
+      if (sl > 0) notes.push(`<span class="note-carry">↑ Starts at level ${sl}: the last one was missed</span>`);
+      return `<li><button class="row" data-open="${r.id}">
+        <span class="when">${hm(d)}<small>${dayLabel(d)}</small></span>
+        <span class="what"><strong>${esc(r.title)}</strong>${notes.join("") || `<span>${esc(r.schedule)}</span>`}</span>
+        <span class="right"><span class="badge ${r.strength}">${r.strength}</span><span class="tiny muted">${rel(d)}</span></span>
+      </button></li>`;
+    }).join("") || `<li class="empty">Nothing scheduled this week.</li>`}</ul>
+  </section>
+
+  <section class="section" aria-labelledby="h-closed">
+    <div class="section-head"><h2 id="h-closed">Last 24 hours</h2></div>
+    <ul class="list card">${closed.map((o) => {
+      const r = remById(o.reminderId), d = L(o.closedAt);
+      const label = o.state === "ACKED" ? `Done after ${o.attempts} nag${o.attempts === 1 ? "" : "s"}` : o.closeReason === "superseded" ? "Missed: the next one took over" : "Missed: gave up after the cap";
+      return `<li><button class="row" data-open="${r.id}">
+        <span class="when">${hm(d)}<small>${dayLabel(d)}</small></span>
+        <span class="what"><strong>${esc(r.title)}</strong><span>${label}</span></span>
+        <span class="right"><span class="state ${o.state}">${o.state}</span></span>
+      </button></li>`;
+    }).join("") || `<li class="empty">Nothing closed yet today.</li>`}</ul>
+  </section>`;
+}
+
+/* ================= Groups & today (proposed: not in /v0 yet) ================= */
+const GROUP_COLORS = { g1: "Blue", g2: "Pink", g3: "Teal", g4: "Purple", g5: "Olive", g6: "Slate" };
+const groupById = (id) => groups.find((g) => g.id === id);
+const groupName = (gid) => (gid === "all" ? "All reminders" : gid === "none" ? "No group" : groupById(gid)?.name ?? "Unknown group");
+const inGroup = (r, gid) => gid === "all" || (gid === "none" ? !r.groupId : r.groupId === gid);
+const gchip = (gid) => { const g = groupById(gid); return g ? `<em class="gchip" style="--gc:var(--${g.color})"><i class="gc-dot" aria-hidden="true"></i>${esc(g.name)}</em>` : ""; };
+const proposed = (s) => `<code class="api proposed">${s}</code>`;
+
+/* Enough RRULE reading for the mock data and the New form's rules. */
+function parseRRule(s) {
+  const p = Object.fromEntries(s.split(";").map((kv) => kv.split("=")));
+  const r = { freq: p.FREQ, interval: Number(p.INTERVAL || 1) };
+  if (p.BYDAY) {
+    const m = p.BYDAY.match(/^(-?\d)([A-Z]{2})$/);
+    if (m) r.nth = { k: Number(m[1]), wd: m[2] }; else r.byday = p.BYDAY.split(",");
+  }
+  if (p.BYMONTHDAY) r.bymonthday = Number(p.BYMONTHDAY);
+  if (p.BYHOUR) r.byhour = p.BYHOUR.split(",").map(Number);
+  if (p.BYMINUTE) r.byminute = p.BYMINUTE.split(",").map(Number);
+  return r;
+}
+/* Whether a rule has an occurrence on day `d`, counting from `start`. */
+function dayMatches(r, start, d) {
+  const monthDiff = (x) => (x.getFullYear() - start.getFullYear()) * 12 + x.getMonth() - start.getMonth();
+  switch (r.freq) {
+    case "DAILY": return dayDiff(start, d) % r.interval === 0;
+    case "WEEKLY": {
+      const monday = (x) => { const m = dateOnly(x); m.setDate(m.getDate() - ((m.getDay() + 6) % 7)); return m; };
+      const days = r.byday ?? [BYDAY[start.getDay()]];
+      return (dayDiff(monday(start), monday(d)) / 7) % r.interval === 0 && days.includes(BYDAY[d.getDay()]);
+    }
+    case "MONTHLY":
+      if (monthDiff(d) % r.interval) return false;
+      if (r.nth) return BYDAY[d.getDay()] === r.nth.wd && (r.nth.k < 0 ? isLastOfMonth(d) : Math.ceil(d.getDate() / 7) === r.nth.k);
+      return d.getDate() === (r.bymonthday ?? start.getDate());
+    default:
+      return (d.getFullYear() - start.getFullYear()) % r.interval === 0 && d.getMonth() === start.getMonth() && d.getDate() === start.getDate();
+  }
+}
+/* A reminder's scheduled times on one day. */
+function timesOnDay(rem, day) {
+  const start = L(rem.dtstart);
+  if (!rem.rrule) return dayDiff(start, day) === 0 ? [start] : [];
+  if (dateOnly(day) < dateOnly(start)) return [];
+  const r = parseRRule(rem.rrule);
+  if (r.freq === "HOURLY") {
+    const step = r.interval * 36e5, from = dateOnly(day).getTime(), to = from + 864e5;
+    const out = [];
+    for (let t = start.getTime() + Math.max(0, Math.ceil((from - start.getTime()) / step)) * step; t < to; t += step) out.push(new Date(t));
+    return out;
+  }
+  if (!dayMatches(r, start, day)) return [];
+  const hours = r.byhour ?? [start.getHours()], mins = r.byminute ?? [start.getMinutes()];
+  return hours.flatMap((h) => mins.map((m) => { const d = new Date(day); d.setHours(h, m, 0, 0); return d; }))
+    .filter((d) => d >= start).sort((a, b) => a - b);
+}
+/* Everything due today, in time order, with what has happened to it so far. */
+function todayItems() {
+  return reminders.flatMap((r) => timesOnDay(r, NOW).map((at) => {
+    const occ = occurrences.find((o) => o.reminderId === r.id && L(o.scheduledFor).getTime() === at.getTime());
+    return { r, at, occ, status: occ ? occ.state : at > NOW ? "UPCOMING" : "DUE" };
+  })).sort((a, b) => a.at - b.at || a.r.title.localeCompare(b.r.title));
+}
+const isOpen = (s) => s === "NAGGING" || s === "UPCOMING" || s === "DUE" || s === "PENDING";
+function itemNote(it) {
+  const o = it.occ;
+  switch (it.status) {
+    case "ACKED": return `Done at ${hm(L(o.closedAt))}${o.attempts > 1 ? ` after ${o.attempts} nags` : ""}`;
+    case "NAGGING": return `Nagging · ${o.attempts} sent · next ${hm(L(o.nextNagAt))}`;
+    case "MISSED": return "Missed: gave up after the cap";
+    case "CANCELLED": return "Cancelled";
+    default: return inQuiet(it.at) ? `🌙 Quiet hours: first nag at ${me.quietHours.end}` : rel(it.at);
+  }
+}
+const STATUS_LABEL = { ACKED: "Done", NAGGING: "Nagging", MISSED: "Missed", CANCELLED: "Cancelled", UPCOMING: "Coming up", DUE: "Due" };
+
+/* ================= View: My Day ================= */
+function viewDay() {
+  const all = todayItems();
+  const gf = state.dayGroup;
+  const items = all.filter((it) => gf === "all" || inGroup(it.r, gf));
+  const count = (s) => items.filter((it) => it.status === s).length;
+  const done = count("ACKED"), nag = count("NAGGING"), missed = count("MISSED"), left = items.filter((it) => it.status === "UPCOMING" || it.status === "DUE").length;
+  const next = items.find((it) => it.status === "UPCOMING");
+  const q = me.quietHours;
+  // Markers for now and the quiet-hours edges share the timeline with the reminders.
+  const marks = [{ kind: "now", at: NOW, text: "Now" }];
+  if (q) {
+    const qe = dateOnly(NOW); qe.setHours(...q.end.split(":").map(Number));
+    const qs = dateOnly(NOW); qs.setHours(...q.start.split(":").map(Number));
+    marks.push({ kind: "quiet", at: qe, text: "Quiet hours end" }, { kind: "quiet", at: qs, text: `Quiet hours start. Nags wait until ${q.end}` });
+  }
+  const rows = [...items.map((it) => ({ kind: "item", at: it.at, it })), ...marks]
+    .sort((a, b) => a.at - b.at || (a.kind === "item" ? 1 : -1));
+  const withToday = groups.filter((g) => all.some((it) => it.r.groupId === g.id));
+  const filterBtn = (id, label, n, color) => `<button type="button" data-daygroup="${id}" aria-pressed="${gf === id}" ${color ? `style="--gc:var(--${color})"` : ""}>${color ? '<i class="gc-dot" aria-hidden="true"></i>' : ""}${esc(label)} <span class="muted">${n}</span></button>`;
+  return `
+  <div class="section-head"><h1 style="font-size:24px">My Day</h1><span class="small muted">${LONGDAY[NOW.getDay()]} ${NOW.getDate()} ${MON[NOW.getMonth()]}</span></div>
+  ${proposed(`GET /v0/agenda?date=${iso(NOW).slice(0, 10)}`)}
+  <div class="card daysum">
+    <div class="dsum-nums">
+      <div><b class="dsum-n">${items.length}</b><span class="dsum-l">today</span></div>
+      <div class="ok"><b class="dsum-n">${done}</b><span class="dsum-l">done</span></div>
+      <div class="acc"><b class="dsum-n">${nag}</b><span class="dsum-l">nagging</span></div>
+      <div class="bad"><b class="dsum-n">${missed}</b><span class="dsum-l">missed</span></div>
+      <div><b class="dsum-n">${left}</b><span class="dsum-l">to come</span></div>
+    </div>
+    <div class="dbar" role="img" aria-label="${done} of ${items.length} done">${[["ok", done], ["acc", nag], ["bad", missed], ["rest", left]].filter(([, n]) => n).map(([c, n]) => `<span class="dbar-seg ${c}" style="flex:${n}"></span>`).join("")}</div>
+    <div class="small">${next ? `Next up: <strong>${hm(next.at)} ${esc(next.r.title)}</strong> <span class="muted">${rel(next.at)}</span>` : '<span class="muted">Nothing else is due today.</span>'}</div>
+  </div>
+  <div class="gfilter" role="group" aria-label="Show group">
+    ${filterBtn("all", "All", all.length)}${withToday.map((g) => filterBtn(g.id, g.name, all.filter((it) => it.r.groupId === g.id).length, g.color)).join("")}
+  </div>
+  <ol class="card day-list">${rows.map((row) => {
+    if (row.kind !== "item") return `<li class="dmark ${row.kind}"><span class="dtime">${hm(row.at)}</span><span class="dline"><i class="dline-dot"></i></span><span class="dlabel">${row.kind === "quiet" ? "🌙 " : ""}${esc(row.text)}</span></li>`;
+    const it = row.it, g = groupById(it.r.groupId);
+    return `<li class="drow st-${it.status}" ${g ? `style="--gc:var(--${g.color})"` : ""}>
+      <span class="dtime">${hm(it.at)}</span>
+      <span class="dline"><i class="dline-dot"></i></span>
+      <button type="button" class="dmain" data-open="${it.r.id}"><strong class="dmain-title">${esc(it.r.title)}</strong>
+        <span class="dmeta">${gchip(it.r.groupId)}<span class="badge ${it.r.strength}">${it.r.strength}</span><span>${itemNote(it)}</span></span></button>
+      <span class="dact">${it.status === "NAGGING" ? `<button type="button" class="btn primary sm" data-ack="${it.occ.id}">✓ Done</button>` : it.status === "UPCOMING" ? "" : `<span class="state ${it.status}">${STATUS_LABEL[it.status]}</span>`}</span>
+    </li>`;
+  }).join("")}</ol>
+  ${items.length ? "" : '<div class="card empty" style="margin-top:12px"><strong>Nothing today</strong>No reminders in this group are due today.</div>'}`;
+}
+
+/* ================= View: Groups ================= */
+function viewGroups() {
+  if (state.group) return viewGroupDetail(state.group);
+  const today = todayItems();
+  const ungrouped = reminders.filter((r) => !r.groupId).length;
+  const card = (g) => {
+    const rems = reminders.filter((r) => r.groupId === g.id), its = today.filter((it) => it.r.groupId === g.id);
+    const nag = its.filter((it) => it.status === "NAGGING").length;
+    const later = rems.filter((r) => r.status === "ACTIVE" && r.nextOccurrenceAt).sort((a, b) => L(a.nextOccurrenceAt) - L(b.nextOccurrenceAt))[0];
+    const shown = its.filter((it) => isOpen(it.status)).slice(0, 3);
+    return `<a class="card gcard" href="#g-${g.id}" style="--gc:var(--${g.color})">
+      <div class="gcard-head"><span class="gdot" aria-hidden="true"></span><strong class="gcard-name">${esc(g.name)}</strong><span class="muted small">${rems.length} reminder${rems.length === 1 ? "" : "s"}</span></div>
+      <div class="gcard-count"><span><b class="gcard-num">${its.length}</b> today</span>${nag ? `<span class="gnag">${nag} nagging</span>` : ""}${its.length && !its.some((it) => isOpen(it.status)) ? '<span class="gdone">✓ all done</span>' : ""}</div>
+      ${shown.length ? `<ul class="gmini">${shown.map((it) => `<li class="gmini-item st-${it.status}"><span class="gmini-time">${hm(it.at)}</span>${esc(it.r.title)}</li>`).join("")}</ul>`
+        : `<p class="small muted" style="margin:0">${later ? `Nothing left today. Next: ${when(L(later.nextOccurrenceAt))}, ${esc(later.title)}` : "Nothing scheduled."}</p>`}
+    </a>`;
+  };
+  return `
+  <div class="section-head"><h1 style="font-size:24px">Groups</h1><button type="button" class="btn" data-addgroup>+ New group</button></div>
+  ${proposed("GET /v0/groups")}
+  ${state.addingGroup ? groupForm() : ""}
+  <div class="group-grid">${groups.map(card).join("")}</div>
+  <ul class="list card" style="margin-top:14px">
+    <li><a class="row" href="#g-all"><span class="when">${reminders.length}</span><span class="what"><strong>All reminders</strong><span>Every group, and reminders without one</span></span><span class="right muted">›</span></a></li>
+    ${ungrouped ? `<li><a class="row" href="#g-none"><span class="when">${ungrouped}</span><span class="what"><strong>No group</strong><span>Reminders you haven't filed yet</span></span><span class="right muted">›</span></a></li>` : ""}
+  </ul>`;
+}
+function groupForm() {
+  const e = state.groupErr;
+  return `<form id="group-form" class="card panel" style="margin:12px 0 16px" novalidate>
+    <div class="field">
+      <label for="g-name">Group name</label>
+      <input class="input" id="g-name" name="name" maxlength="100" placeholder="Kids" autocomplete="off" ${e ? 'aria-invalid="true" aria-describedby="e-gname"' : ""}>
+      ${e ? `<span class="err" id="e-gname">${esc(e)}</span>` : ""}
+    </div>
+    <div class="field">
+      <span class="label" id="l-gcolor">Color</span>
+      <div class="swatches" role="radiogroup" aria-labelledby="l-gcolor">${Object.entries(GROUP_COLORS).map(([k, n], i) => `<label title="${n}"><input type="radio" name="color" value="${k}" ${i === groups.length % 6 ? "checked" : ""}><span style="--gc:var(--${k})" aria-hidden="true"></span><span class="sr-only">${n}</span></label>`).join("")}</div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap">
+      ${proposed("POST /v0/groups")}
+      <button type="button" class="btn ghost" data-addgroup-cancel>Cancel</button>
+      <button type="submit" class="btn primary">Create group</button>
+    </div>
+  </form>`;
+}
+function viewGroupDetail(gid) {
+  const g = groupById(gid);
+  if (!g && gid !== "all" && gid !== "none") return `<a class="back" href="#groups">‹ Groups</a><div class="card empty"><strong>Group not found</strong>It may have been deleted.</div>`;
+  const q = state.q.trim().toLowerCase();
+  const rems = reminders.filter((r) => inGroup(r, gid) && (!q || r.title.toLowerCase().includes(q) || (r.body || "").toLowerCase().includes(q)));
+  const today = todayItems();
+  const byRem = new Map(rems.map((r) => [r.id, today.filter((it) => it.r.id === r.id)]));
+  // Today, in the order things will happen: each reminder sorts by its next open time today.
+  const nextOpen = (r) => byRem.get(r.id).find((it) => isOpen(it.status));
+  const todayOpen = rems.filter(nextOpen).sort((a, b) => nextOpen(a).at - nextOpen(b).at);
+  const todayDone = rems.filter((r) => byRem.get(r.id).length && !nextOpen(r)).sort((a, b) => byRem.get(a.id)[0].at - byRem.get(b.id)[0].at);
+  const later = rems.filter((r) => r.status === "ACTIVE" && !byRem.get(r.id).length).sort((a, b) => (a.nextOccurrenceAt ? L(a.nextOccurrenceAt) : Infinity) - (b.nextOccurrenceAt ? L(b.nextOccurrenceAt) : Infinity));
+  const completed = rems.filter((r) => r.status === "COMPLETED" && !byRem.get(r.id).length);
+  const showGroup = gid === "all";
+  const todayRow = (r) => {
+    const its = byRem.get(r.id), cur = nextOpen(r) ?? its.at(-1);
+    return `<li><button type="button" class="row" data-open="${r.id}">
+      <span class="when">${hm(cur.at)}<small>${cur.status === "UPCOMING" ? rel(cur.at) : STATUS_LABEL[cur.status].toLowerCase()}</small></span>
+      <span class="what"><strong>${esc(r.title)}</strong>
+        ${its.length > 1 ? `<span class="tchips">${its.map((it) => `<em class="tchip ${it.status}${it === cur && it.status === "UPCOMING" ? " next" : ""}">${it.status === "ACKED" ? "✓ " : ""}${hm(it.at)}</em>`).join("")}</span>`
+          : `<span>${showGroup && r.groupId ? `${esc(groupName(r.groupId))} · ` : ""}${itemNote(cur)}</span>`}
+      </span>
+      <span class="right"><span class="badge ${r.strength}">${r.strength}</span>${cur.status === "NAGGING" || cur.status === "ACKED" || cur.status === "MISSED" ? `<span class="state ${cur.status}">${STATUS_LABEL[cur.status]}</span>` : ""}</span>
+    </button></li>`;
+  };
+  const laterRow = (r) => {
+    const d = r.nextOccurrenceAt && L(r.nextOccurrenceAt);
+    return `<li><button type="button" class="row" data-open="${r.id}">
+      <span class="when">${d ? hm(d) : "—"}<small>${d ? dayLabel(d) : r.status === "COMPLETED" ? "done" : "none"}</small></span>
+      <span class="what"><strong>${esc(r.title)}</strong><span>${showGroup && r.groupId ? `${esc(groupName(r.groupId))} · ` : ""}${esc(r.schedule)}</span></span>
+      <span class="right"><span class="badge ${r.strength}">${r.strength}</span>${d ? `<span class="tiny muted">${rel(d)}</span>` : ""}</span>
+    </button></li>`;
+  };
+  const section = (id, title, list, rowFn, note = "") => (list.length ? `
+    <section class="section" aria-labelledby="${id}">
+      <div class="section-head"><h2 id="${id}">${title} <span class="muted small">${list.length}</span></h2>${note}</div>
+      <ul class="list card">${list.map(rowFn).join("")}</ul>
+    </section>` : "");
+  return `
+  <a class="back" href="#groups">‹ Groups</a>
+  <div class="section-head">
+    <h1 class="gtitle" ${g ? `style="--gc:var(--${g.color})"` : ""}>${g ? '<span class="gdot" aria-hidden="true"></span>' : ""}${esc(groupName(gid))}</h1>
+    <a class="btn primary" href="#new" data-newin="${g ? g.id : ""}">+ New</a>
+  </div>
+  ${gid === "all" ? '<code class="api">GET /v0/reminders</code>' : proposed(`GET /v0/reminders?groupId=${gid === "none" ? "null" : gid}`)}
+  <div class="toolbar">
+    <label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <span class="sr-only">Search this group</span><input id="q" type="search" placeholder="Search ${esc(groupName(gid))}" value="${esc(state.q)}"></label>
+  </div>
+  ${section("h-today", "Today", todayOpen, todayRow, '<span class="small muted">in the order they happen</span>')}
+  ${section("h-done", "Done for today", todayDone, todayRow)}
+  ${section("h-later", "Later", later, laterRow)}
+  ${section("h-completed", "Completed", completed, laterRow)}
+  ${rems.length ? "" : `<div class="card empty" style="margin-top:16px"><strong>${q ? "No matches" : "No reminders here yet"}</strong>${q ? "Try another search." : "Create one, or move one here from its details."}</div>`}`;
+}
+function bindGroups() {
+  const q = document.getElementById("q");
+  q?.addEventListener("input", () => { state.q = q.value; const pos = q.selectionStart; render(); const n = document.getElementById("q"); n.focus(); n.setSelectionRange(pos, pos); });
+  const f = document.getElementById("group-form");
+  if (!f) return;
+  if (!state.groupErr) f.elements.name.focus();
+  f.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = f.elements.name.value.trim();
+    state.groupErr = !name ? "Give the group a name." : groups.some((x) => x.name.toLowerCase() === name.toLowerCase()) ? `You already have a group called ${name}.` : "";
+    if (state.groupErr) { render(); document.getElementById("g-name").value = name; document.getElementById("g-name").focus(); return; }
+    const id = `${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "group"}-${groups.length + 1}`;
+    groups.push({ id, name, color: f.elements.color.value });
+    state.addingGroup = false;
+    toast(`Group “${name}” created`, "201 POST /v0/groups · proposed");
+    render();
+  });
+}
+
+/* ================= Sheet: reminder detail ================= */
+function escChart(strength, cap, startLevel = 0, maxRows = 10) {
+  const sim = simulate(strength, cap, startLevel);
+  const maxIv = PROFILES[strength].initial;
+  const rows = sim.nags.slice(0, maxRows).map((n, i) => `
+    <div class="esc-row"><span class="n">#${i + 1}</span>
+      <span class="bar" title="Waits ${fmtMin(n.interval)} before the next nag"><i style="width:${Math.max(6, (n.interval / maxIv) * 100)}%"></i></span>
+      <span class="t">+${fmtDur(n.at)}</span><span class="pr">P${n.priority}</span></div>`).join("");
+  const more = sim.nags.length > maxRows ? `<div class="esc-more">…and ${sim.nags.length - maxRows} more at every ${fmtMin(intervalAt(strength, 99))}</div>` : "";
+  return `<div class="esc ${strength}" role="img" aria-label="Nag schedule: ${sim.nags.length} nags over ${fmtDur(sim.giveUpAt)}">${rows}${more}</div>`;
+}
+function giveUpSentence(strength, cap) {
+  const sim = simulate(strength, cap);
+  return `Up to <strong>${sim.nags.length} nags</strong>, then gives up after <strong>${fmtDur(sim.giveUpAt)}</strong> (${sim.byAttempts ? "attempt limit" : "time limit"}) unless you mark it done.`;
+}
+const EVENT_TEXT = {
+  SCHEDULED: () => "Occurrence created",
+  NAG_SENT: (d) => `Nag #${d.attempt} sent<span class="ev-note">level ${d.level} · ntfy priority ${d.priority}</span>`,
+  SEND_FAILED: () => "Delivery failed; retrying",
+  DEFERRED_QUIET: (d) => `Held for quiet hours<span class="ev-note">until ${hm(L(d.until))}</span>`,
+  ACKED: () => "Marked done",
+  MISSED: () => "Gave up: cap reached",
+  SUPERSEDED: () => "Replaced by the next occurrence",
+  CANCELLED: () => "Cancelled: reminder deleted",
+};
+function occBlock(o) {
+  const isOpen = state.openOcc.has(o.id), s = L(o.scheduledFor);
+  const sub = o.state === "NAGGING" ? `level ${o.level} · ${o.attempts} nag${o.attempts === 1 ? "" : "s"} · next ${hm(L(o.nextNagAt))}`
+    : o.closedAt ? `${o.attempts} nag${o.attempts === 1 ? "" : "s"} · closed ${when(L(o.closedAt))}` : "";
+  const body = !isOpen ? "" : o.events
+    ? `<ol class="timeline">${o.events.map((e) => `<li class="ev ${e.type}"><time>${hm(L(e.at))}</time>${EVENT_TEXT[e.type](e.data)}</li>`).join("")}</ol><div style="padding:0 12px 10px"><code class="api">GET /v0/occurrences/${o.id}/events</code></div>`
+    : `<div class="small muted" style="padding:4px 14px 12px">Events aren't in the mock data for this one.<br><code class="api">GET /v0/occurrences/${o.id}/events</code></div>`;
+  return `<div class="occ" data-open="${isOpen}">
+    <button data-occ="${o.id}" aria-expanded="${isOpen}">
+      <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+      <span class="grow">${when(s)}<small>${sub}</small></span>
+      <span class="state ${o.state}">${o.state}</span>
+    </button>${body}</div>`;
+}
+function renderSheet() {
+  const sh = document.getElementById("sheet"), scrim = document.getElementById("scrim");
+  const r = state.sheet && remById(state.sheet);
+  if (!r) { sh.classList.remove("open"); scrim.classList.remove("open"); setTimeout(() => { if (!state.sheet) sh.hidden = true; }, 260); return; }
+  const cap = { ...DEFAULT_CAP, ...r.cap }, occs = occsOf(r.id), open = occs.find((o) => o.state === "NAGGING");
+  const sl = startLevelFor(r);
+  sh.innerHTML = `
+    <div class="grab" aria-hidden="true"></div>
+    <div class="sheet-head">
+      <h2 id="sheet-title">${esc(r.title)}</h2>
+      <button class="btn icon ghost" data-close aria-label="Close">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge ${r.strength}">${r.strength}</span><span class="state ${r.status === "ACTIVE" ? "" : "ACKED"}">${r.status}</span>
+        <code class="api">GET /v0/reminders/${r.id}</code>
+      </div>
+      ${open ? `<button class="btn primary block" data-ack="${open.id}">✓ Done, stop nagging</button>` : ""}
+      ${r.body ? `<p style="margin:0">${esc(r.body)}</p>` : ""}
+      <dl class="kv">
+        <dt><label for="sheet-group">Group</label></dt><dd><select class="input" id="sheet-group" style="min-height:36px;padding:4px 8px"><option value="">No group</option>${groups.map((g) => `<option value="${g.id}" ${g.id === r.groupId ? "selected" : ""}>${esc(g.name)}</option>`).join("")}</select></dd>
+        <dt>Schedule</dt><dd>${esc(r.schedule)}</dd>
+        <dt>Starts</dt><dd>${when(L(r.dtstart))} <span class="muted small">${esc(r.timezone)}</span></dd>
+        <dt>RRULE</dt><dd>${r.rrule ? `<code>${esc(r.rrule)}</code>` : '<span class="muted">none (one-off)</span>'}</dd>
+        <dt>Next</dt><dd>${r.nextOccurrenceAt ? `${when(L(r.nextOccurrenceAt))} <span class="muted small">${rel(L(r.nextOccurrenceAt))}</span>` : '<span class="muted">—</span>'}</dd>
+        <dt>Gives up</dt><dd>after ${cap.maxAttempts} nags or ${fmtDur(cap.maxDurationMinutes)}${Object.keys(r.cap).length ? "" : ' <span class="muted small">(default)</span>'}</dd>
+      </dl>
+      <div>
+        <div class="sub-h">How it nags${sl ? ` <span class="note-carry" style="text-transform:none;letter-spacing:0">· next one starts at level ${sl}</span>` : ""}</div>
+        ${escChart(r.strength, r.cap, sl, 8)}
+        <p class="small muted" style="margin:10px 0 0">${giveUpSentence(r.strength, r.cap)} Bars show the wait before the next nag; P is the ntfy priority.</p>
+      </div>
+      <div>
+        <div class="sub-h">History</div>
+        <code class="api" style="margin-bottom:8px">GET /v0/reminders/${r.id}/occurrences</code>
+        ${occs.length ? occs.map(occBlock).join("") : '<p class="small muted" style="margin:0">No occurrences yet. The first one is created when it falls due.</p>'}
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" disabled title="Not in this mockup">Edit</button>
+        ${r.status === "ACTIVE" ? `<button class="btn danger" data-delete="${r.id}">Delete</button>` : ""}
+        <code class="api" style="align-self:center">PATCH · DELETE /v0/reminders/${r.id}</code>
+      </div>
+    </div>`;
+  sh.hidden = false;
+  requestAnimationFrame(() => { sh.classList.add("open"); scrim.classList.add("open"); });
+}
+function openSheet(id) { state.sheet = id; state.openOcc = new Set(occsOf(id).filter((o) => o.state === "NAGGING").map((o) => o.id)); renderSheet(); setTimeout(() => document.querySelector("#sheet [data-close]")?.focus(), 50); }
+function closeSheet() { state.sheet = null; renderSheet(); }
+
+/* ================= View: New reminder ================= */
+const TZS = ["America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles", "Europe/London", "Europe/Berlin", "Asia/Tokyo", "Australia/Sydney"];
+const BYDAY = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+const LONGDAY = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const WEEK = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"]; // display order, Monday first
+const WEEKDAYS = ["MO", "TU", "WE", "TH", "FR"];
+const NTH = ["", "first", "second", "third", "fourth"];
+const UNITS = { hour: "HOURLY", day: "DAILY", week: "WEEKLY", month: "MONTHLY", year: "YEARLY" };
+function newDraft() {
+  const d = new Date(NOW); d.setHours(d.getHours() + 1, 0, 0, 0);
+  const groupId = state.newIn ?? ""; state.newIn = null;
+  return { title: "", body: "", groupId, dtstart: iso(d), timezone: me.timezone, repeat: "once", c: null, strength: "firm", maxAttempts: "", maxDurationMinutes: "" };
+}
+const ord = (n) => n + (n % 10 === 1 && n !== 11 ? "st" : n % 10 === 2 && n !== 12 ? "nd" : n % 10 === 3 && n !== 13 ? "rd" : "th");
+const dateOnly = (d) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+const dayDiff = (a, b) => Math.round((dateOnly(b) - dateOnly(a)) / 864e5);
+const daysInMonth = (d) => new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+const isLastOfMonth = (d) => d.getDate() + 7 > daysInMonth(d);
+const startOf = (x) => (x.dtstart ? L(x.dtstart) : NOW);
+const shortList = (codes) => {
+  const names = WEEK.filter((c) => codes.includes(c)).map((c) => DAYS[BYDAY.indexOf(c)]);
+  return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : names[0] || "(no days picked)";
+};
+
+/* The custom builder, seeded from whichever preset was picked before it. */
+function seedCustom(x) {
+  const d = startOf(x), wd = BYDAY[d.getDay()];
+  const unit = { daily: "day", weekdays: "week", monthly: "month", yearly: "year" }[x.repeat] || "week";
+  return { interval: "1", unit, days: x.repeat === "weekdays" ? [...WEEKDAYS] : [wd], monthMode: "day", ends: "never", until: "", count: "10" };
+}
+
+/* Presets and the custom builder both become one rule object, which drives the RRULE, the
+   summary sentence and the upcoming dates, so the three can't disagree. */
+function toRule(x) {
+  const d = startOf(x), wd = BYDAY[d.getDay()];
+  switch (x.repeat) {
+    case "daily": return { freq: "DAILY", interval: 1 };
+    case "weekdays": return { freq: "WEEKLY", interval: 1, byday: [...WEEKDAYS] };
+    case "weekly": return { freq: "WEEKLY", interval: 1, byday: [wd] };
+    case "monthly": return { freq: "MONTHLY", interval: 1, bymonthday: d.getDate() };
+    case "yearly": return { freq: "YEARLY", interval: 1 };
+    case "custom": {
+      const c = x.c, r = { freq: UNITS[c.unit], interval: Math.max(1, Number.parseInt(c.interval, 10) || 1) };
+      if (c.unit === "week") r.byday = WEEK.filter((k) => c.days.includes(k));
+      if (c.unit === "month") {
+        if (c.monthMode === "day") r.bymonthday = d.getDate();
+        else r.nth = { k: c.monthMode === "last" ? -1 : Math.ceil(d.getDate() / 7), wd };
+      }
+      if (c.ends === "after") r.count = Number.parseInt(c.count, 10) || 0;
+      if (c.ends === "on" && c.until) r.until = L(`${c.until}T23:59:59`);
+      return r;
+    }
+    default: return null;
+  }
+}
+/* RFC 5545 requires UNTIL in UTC when the start has a time zone. */
+function zonedToUtc(local, tz) {
+  const guess = Date.UTC(local.getFullYear(), local.getMonth(), local.getDate(), local.getHours(), local.getMinutes(), local.getSeconds());
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" })
+    .formatToParts(new Date(guess)).map((q) => [q.type, q.value]));
+  const asTz = Date.UTC(+p.year, p.month - 1, +p.day, +p.hour, +p.minute, +p.second);
+  return new Date(guess - (asTz - guess));
+}
+function toRRule(r, tz) {
+  if (!r) return null;
+  const p = [`FREQ=${r.freq}`];
+  if (r.interval > 1) p.push(`INTERVAL=${r.interval}`);
+  if (r.byday) p.push(`BYDAY=${r.byday.join(",")}`);
+  if (r.nth) p.push(`BYDAY=${r.nth.k}${r.nth.wd}`);
+  if (r.bymonthday) p.push(`BYMONTHDAY=${r.bymonthday}`);
+  if (r.count) p.push(`COUNT=${r.count}`);
+  if (r.until) p.push(`UNTIL=${zonedToUtc(r.until, tz).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "")}`);
+  return p.join(";");
+}
+function ruleText(x) {
+  const d = startOf(x), t = hm(d), r = toRule(x);
+  if (!r) return `Once, ${dayLabel(d)} at ${t}`;
+  const every = (unit) => (r.interval > 1 ? `Every ${r.interval} ${unit}s` : `Every ${unit}`);
+  let s;
+  switch (r.freq) {
+    case "HOURLY": s = `${every("hour")}, starting ${t}`; break;
+    case "DAILY": s = `${every("day")} at ${t}`; break;
+    case "WEEKLY":
+      s = r.interval === 1 && r.byday.join() === WEEKDAYS.join() ? `Every weekday at ${t}`
+        : r.byday.length === 7 && r.interval === 1 ? `Every day at ${t}`
+        : `${every("week")} on ${shortList(r.byday)} at ${t}`;
+      break;
+    case "MONTHLY":
+      s = `${every("month")} on the ${r.bymonthday ? ord(r.bymonthday) : `${r.nth.k < 0 ? "last" : NTH[r.nth.k]} ${LONGDAY[d.getDay()]}`} at ${t}`;
+      break;
+    default: s = `${every("year")} on ${d.getDate()} ${MON[d.getMonth()]} at ${t}`;
+  }
+  if (r.count) s += `, ${r.count} time${r.count === 1 ? "" : "s"}`;
+  if (r.until) s += `, until ${r.until.getDate()} ${MON[r.until.getMonth()]} ${r.until.getFullYear()}`;
+  return s;
+}
+/* The next few dates from now: a preview only; the server computes the real ones. */
+function upcomingDates(x, n = 4) {
+  const start = startOf(x), r = toRule(x);
+  if (!r) return start >= NOW ? [start] : [];
+  const out = []; let seen = 0;
+  const take = (d) => {
+    if (r.until && d > r.until) return false;
+    seen++;
+    if (r.count && seen > r.count) return false;
+    if (d >= NOW) out.push(d);
+    return out.length < n;
+  };
+  if (r.freq === "HOURLY") {
+    for (let i = 0; i < 20000; i++) if (!take(new Date(start.getTime() + i * r.interval * 36e5))) break;
+    return out;
+  }
+  for (let i = 0; i < 366 * 12; i++) {
+    const d = new Date(start); d.setDate(start.getDate() + i);
+    if (dayMatches(r, start, d) && !take(d)) break;
+  }
+  return out;
+}
+/* Problems with the repeat settings, shown live and checked on submit. */
+function repeatErrors(x) {
+  const e = {};
+  if (x.repeat === "custom") {
+    const c = x.c, iv = Number(c.interval);
+    if (!Number.isInteger(iv) || iv < 1 || iv > 1000) e.c_interval = "Enter a whole number from 1 to 1000.";
+    if (c.unit === "week" && !c.days.length) e.c_day = "Pick at least one day.";
+    if (c.ends === "after") { const n = Number(c.count); if (!Number.isInteger(n) || n < 1 || n > 1000) e.c_count = "Enter a number of times from 1 to 1000."; }
+    if (c.ends === "on") {
+      if (!c.until) e.c_until = "Pick an end date.";
+      else if (c.until < x.dtstart.slice(0, 10)) e.c_until = "The end date is before the first time.";
+    }
+  }
+  if (!Object.keys(e).length && x.repeat !== "once" && !upcomingDates(x, 1).length) e.repeat = "This schedule has no dates after now.";
+  return e;
+}
+function repeatHint(x) {
+  const d = startOf(x), r = toRule(x);
+  if (r?.bymonthday > 28) return `Months without a ${ord(r.bymonthday)} are skipped.`;
+  if (r?.freq === "YEARLY" && d.getMonth() === 1 && d.getDate() === 29) return "Only happens in leap years.";
+  return "";
+}
+function draftCap(x) {
+  const c = {};
+  if (x.maxAttempts !== "") c.maxAttempts = Number(x.maxAttempts);
+  if (x.maxDurationMinutes !== "") c.maxDurationMinutes = Number(x.maxDurationMinutes);
+  return c;
+}
+function draftBody(x) {
+  const rrule = toRRule(toRule(x), x.timezone), cap = draftCap(x);
+  const b = { title: x.title, dtstart: x.dtstart, timezone: x.timezone, strength: x.strength };
+  if (x.body.trim()) b.body = x.body;
+  if (x.groupId) b.groupId = x.groupId;
+  if (rrule) b.rrule = rrule;
+  if (Object.keys(cap).length) b.cap = cap;
+  return b;
+}
+function customBuilder(x, e) {
+  const c = x.c, d = startOf(x), wd = d.getDay();
+  const unitOpt = (u) => `<option value="${u}" ${c.unit === u ? "selected" : ""}>${u}${Number(c.interval) === 1 ? "" : "s"}</option>`;
+  const err = (k) => (e[k] ? `<span class="err" id="e-${k}">${e[k]}</span>` : "");
+  const inv = (k) => (e[k] ? `aria-invalid="true" aria-describedby="e-${k}"` : "");
+  const nth = Math.ceil(d.getDate() / 7);
+  const monthOpts = [["day", `On day ${d.getDate()}`]];
+  if (nth <= 4) monthOpts.push(["nth", `On the ${NTH[nth]} ${LONGDAY[wd]}`]);
+  if (isLastOfMonth(d)) monthOpts.push(["last", `On the last ${LONGDAY[wd]}`]);
+  const radio = (name, v, label, extra = "") => `<label class="radio"><input type="radio" name="${name}" value="${v}" ${c[name === "c_month" ? "monthMode" : "ends"] === v ? "checked" : ""}> <span>${label}</span>${extra}</label>`;
+  return `
+  <fieldset class="builder">
+    <legend class="sr-only">Custom repeat</legend>
+    <div class="b-row">
+      <label for="c-interval">Every</label>
+      <input class="input num" type="number" id="c-interval" name="c_interval" min="1" max="1000" inputmode="numeric" value="${esc(c.interval)}" ${inv("c_interval")}>
+      <select class="input unit" name="c_unit" aria-label="Unit">${Object.keys(UNITS).map(unitOpt).join("")}</select>
+    </div>
+    ${err("c_interval")}
+    ${c.unit === "week" ? `
+    <div class="b-block">
+      <span class="b-label" id="l-days">On</span>
+      <div class="daypick" role="group" aria-labelledby="l-days" ${inv("c_day")}>
+        ${WEEK.map((k) => { const i = BYDAY.indexOf(k); return `<label title="${LONGDAY[i]}"><input type="checkbox" name="c_day" value="${k}" ${c.days.includes(k) ? "checked" : ""}><span aria-hidden="true">${DAYS[i][0]}</span><span class="sr-only">${LONGDAY[i]}</span></label>`; }).join("")}
+      </div>
+      ${err("c_day")}
+    </div>` : ""}
+    ${c.unit === "month" ? `
+    <div class="b-block" role="radiogroup" aria-label="Which day of the month">
+      ${monthOpts.map(([v, l]) => radio("c_month", v, l)).join("")}
+    </div>` : ""}
+    <div class="b-block" role="radiogroup" aria-label="Ends">
+      <span class="b-label">Ends</span>
+      ${radio("c_ends", "never", "Never")}
+      ${radio("c_ends", "on", "On", ` <input class="input inline" type="date" name="c_until" aria-label="End date" value="${esc(c.until)}" min="${esc(x.dtstart.slice(0, 10))}" ${c.ends === "on" ? inv("c_until") : "disabled"}>`)}
+      ${radio("c_ends", "after", "After", ` <input class="input inline num" type="number" name="c_count" aria-label="Number of times" min="1" max="1000" value="${esc(c.count)}" ${c.ends === "after" ? inv("c_count") : "disabled"}> <span>times</span>`)}
+      ${c.ends === "on" ? err("c_until") : ""}${c.ends === "after" ? err("c_count") : ""}
+    </div>
+  </fieldset>`;
+}
+function viewNew() {
+  if (!state.draft) state.draft = newDraft();
+  const x = state.draft, e = state.errors, d = startOf(x);
+  const opt = (v, l) => `<option value="${v}" ${x.repeat === v ? "selected" : ""}>${l}</option>`;
+  return `
+  <div class="section-head"><h1 style="font-size:24px">New reminder</h1></div>
+  <form id="new-form" class="form-grid" novalidate>
+    <div class="card panel">
+      <div class="field">
+        <label for="f-title">What should we nag you about?</label>
+        <input class="input" id="f-title" name="title" maxlength="200" placeholder="Take the bins out" value="${esc(x.title)}" ${e.title ? 'aria-invalid="true" aria-describedby="e-title"' : ""} autocomplete="off">
+        ${e.title ? `<span class="err" id="e-title">${e.title}</span>` : ""}
+      </div>
+      <div class="field">
+        <label for="f-body">Notes <span class="muted" style="font-weight:400">(optional)</span></label>
+        <textarea class="input" id="f-body" name="body" maxlength="2000" placeholder="Shown in the app, not in the notification">${esc(x.body)}</textarea>
+      </div>
+      <div class="field">
+        <label for="f-group">Group</label>
+        <select class="input" id="f-group" name="groupId"><option value="">No group</option>${groups.map((g) => `<option value="${g.id}" ${g.id === x.groupId ? "selected" : ""}>${esc(g.name)}</option>`).join("")}</select>
+        <span class="hint">Make new groups on the Groups page.</span>
+      </div>
+      <div class="two">
+        <div class="field">
+          <label for="f-dtstart">First time</label>
+          <input class="input" type="datetime-local" id="f-dtstart" name="dtstart" value="${esc(x.dtstart)}">
+          ${inQuiet(d) ? `<span class="hint note-quiet">🌙 During your quiet hours: the first nag waits until ${me.quietHours.end}.</span>` : ""}
+        </div>
+        <div class="field">
+          <label for="f-tz">Time zone</label>
+          <select class="input" id="f-tz" name="timezone">${TZS.map((t) => `<option ${t === x.timezone ? "selected" : ""}>${t}</option>`).join("")}</select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="f-repeat">Repeat</label>
+        <select class="input" id="f-repeat" name="repeat">
+          ${opt("once", "Doesn't repeat")}${opt("daily", "Every day")}${opt("weekdays", "Every weekday (Mon–Fri)")}
+          ${opt("weekly", `Every week on ${LONGDAY[d.getDay()]}`)}${opt("monthly", `Every month on the ${ord(d.getDate())}`)}
+          ${opt("yearly", `Every year on ${d.getDate()} ${MON[d.getMonth()]}`)}${opt("custom", "Custom…")}
+        </select>
+        ${x.repeat === "custom" ? customBuilder(x, e) : ""}
+        <div class="repeat-sum" id="repeat-sum" aria-live="polite"></div>
+      </div>
+      <div class="field">
+        <span class="label" id="l-strength">How hard should it nag?</span>
+        <div class="strengths" role="radiogroup" aria-labelledby="l-strength">
+          ${Object.entries(PROFILES).map(([k, p]) => `<label><input type="radio" name="strength" value="${k}" ${x.strength === k ? "checked" : ""}><span class="opt ${k}"><b style="text-transform:capitalize">${k}</b><small class="opt-desc">${p.blurb}</small></span></label>`).join("")}
+        </div>
+      </div>
+      <details class="adv" ${x.maxAttempts !== "" || x.maxDurationMinutes !== "" ? "open" : ""}>
+        <summary>When to give up</summary>
+        <div class="two">
+          <div class="field"><label for="f-att">Max nags</label><input class="input" type="number" id="f-att" name="maxAttempts" min="1" max="100" placeholder="20 (default)" value="${esc(x.maxAttempts)}"><span class="hint">1–100</span></div>
+          <div class="field"><label for="f-dur">Max duration (minutes)</label><input class="input" type="number" id="f-dur" name="maxDurationMinutes" min="1" max="10080" placeholder="1440 (default)" value="${esc(x.maxDurationMinutes)}"><span class="hint">1–10080 (7 days)</span></div>
+        </div>
+      </details>
+      <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+        <button type="button" class="btn ghost" id="f-reset">Clear</button>
+        <button type="submit" class="btn primary">Create reminder</button>
+      </div>
+    </div>
+
+    <div class="preview-col" style="display:grid;gap:16px">
+      <div class="card panel" id="preview"></div>
+    </div>
+  </form>`;
+}
+function renderRepeatSummary() {
+  const x = state.draft, el = document.getElementById("repeat-sum"), live = repeatErrors(x);
+  // After a submit, field errors show under their inputs, so don't repeat them here.
+  const problem = Object.entries(live).find(([k]) => !state.errors[k])?.[1];
+  const ok = !Object.keys(live).length, dates = ok ? upcomingDates(x) : [];
+  const hint = repeatHint(x);
+  el.innerHTML = `
+    <strong>${x.repeat === "once" ? "" : "↻ "}${esc(ruleText(x))}</strong>
+    ${problem ? `<span class="err">${esc(problem)}</span>` : ""}
+    ${!ok ? "" : `<div class="next-dates"><span class="muted">${x.repeat === "once" ? "On" : "Next"}</span>${dates.map((d) => `<span class="date-chip">${esc(when(d))}</span>`).join("")}${x.repeat !== "once" && dates.length === 4 ? '<span class="muted">…</span>' : ""}</div>`}
+    ${hint ? `<span class="hint">${esc(hint)}</span>` : ""}`;
+}
+function renderPreview() {
+  const x = state.draft, cap = draftCap(x), p = document.getElementById("preview");
+  const validCap = (!cap.maxAttempts || (cap.maxAttempts >= 1 && cap.maxAttempts <= 100)) && (!cap.maxDurationMinutes || (cap.maxDurationMinutes >= 1 && cap.maxDurationMinutes <= 10080));
+  renderRepeatSummary();
+  p.innerHTML = `
+    <div>
+      <div class="sub-h">On your phone</div>
+      <div class="phone-notif">
+        <div class="app-ic" aria-hidden="true">nt</div>
+        <div class="body">
+          <div class="top"><span>ntfy · P${priorityAt(x.strength, 0)}</span><span>${hm(startOf(x))}</span></div>
+          <div class="ttl">${esc(x.title.trim() || "Your reminder title")}</div>
+          <div class="acts"><span>Done</span><span>Open</span></div>
+        </div>
+      </div>
+      <p class="tiny muted" style="margin:6px 0 0">Only the title is sent to ntfy. Notes stay private (ADR 0002).</p>
+    </div>
+    <div>
+      <div class="sub-h">Each time it's due</div>
+      ${validCap ? `<div class="summary-line">${giveUpSentence(x.strength, cap)}</div>
+      <div style="margin-top:12px">${escChart(x.strength, cap, 0, 10)}</div>` : `<div class="summary-line err">Check the give-up limits.</div>`}
+    </div>
+    <details class="adv">
+      <summary>Request body</summary>
+      <code class="api" style="display:inline-block;margin-bottom:8px">POST /v0/reminders · Idempotency-Key: &lt;uuid&gt;</code>
+      ${x.groupId ? proposed("groupId is a proposed field") : ""}
+      <pre class="json">${esc(JSON.stringify(draftBody(x), null, 2))}</pre>
+    </details>`;
+}
+function bindNew() {
+  const f = document.getElementById("new-form");
+  renderPreview();
+  const x = () => state.draft;
+  // Custom-builder fields live in draft.c; everything else maps straight onto the draft.
+  const apply = (t) => {
+    const c = x().c;
+    switch (t.name) {
+      case "c_interval": c.interval = t.value; break;
+      case "c_unit": c.unit = t.value; break;
+      case "c_day": c.days = [...f.querySelectorAll('[name="c_day"]:checked')].map((i) => i.value); break;
+      case "c_month": c.monthMode = t.value; break;
+      case "c_ends": c.ends = t.value; break;
+      case "c_until": c.until = t.value; break;
+      case "c_count": c.count = t.value; break;
+      default: x()[t.name] = t.value;
+    }
+    if (t.name === "repeat" && t.value === "custom" && !x().c) x().c = seedCustom({ ...x(), repeat: f.dataset.prevRepeat || "once" });
+    if (t.name === "repeat") f.dataset.prevRepeat = t.value;
+  };
+  f.dataset.prevRepeat = x().repeat;
+  // Typing updates the summary and preview; choices that change which fields show re-render
+  // the form, then put focus back where the person was.
+  f.addEventListener("input", (ev) => {
+    const t = ev.target; if (!t.name) return;
+    apply(t);
+    if (t.name.startsWith("c_")) delete state.errors[t.name];
+    renderPreview();
+  });
+  const STRUCTURAL = { repeat: "#f-repeat", dtstart: "#f-dtstart", c_unit: '[name="c_unit"]', c_interval: "#c-interval" };
+  f.addEventListener("change", (ev) => {
+    const t = ev.target;
+    let focus = STRUCTURAL[t.name];
+    if (t.name === "c_ends") focus = { on: '[name="c_until"]', after: '[name="c_count"]' }[t.value] || '[name="c_ends"][value="never"]';
+    if (!focus) return;
+    apply(t);
+    if (t.name === "repeat" || t.name === "c_unit" || t.name === "c_ends") state.errors = {};
+    render(); document.querySelector(focus)?.focus();
+  });
+  document.getElementById("f-reset").addEventListener("click", () => { state.draft = newDraft(); state.errors = {}; render(); });
+  f.addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    const d = x(), errors = repeatErrors(d);
+    if (!d.title.trim()) errors.title = "Give it a title.";
+    state.errors = errors;
+    if (Object.keys(errors).length) { render(); document.querySelector('[aria-invalid="true"], #repeat-sum .err')?.focus(); return; }
+    const id = uid(), next = upcomingDates(d, 1)[0];
+    reminders.unshift({ id, groupId: d.groupId || null, title: d.title.trim(), body: d.body.trim() || null, dtstart: d.dtstart, timezone: d.timezone, rrule: toRRule(toRule(d), d.timezone), strength: d.strength, cap: draftCap(d), status: "ACTIVE", nextOccurrenceAt: next ? iso(next) : null, schedule: ruleText(d) });
+    state.draft = null; state.q = "";
+    location.hash = `#g-${d.groupId || "none"}`;
+    toast("Reminder created", "201 POST /v0/reminders");
+    setTimeout(() => openSheet(id), 150);
+  });
+}
+
+/* ================= View: Settings ================= */
+function viewSettings() {
+  const q = me.quietHours;
+  return `
+  <div class="section-head"><h1 style="font-size:24px">Settings</h1></div>
+  <form id="settings" class="settings" novalidate>
+    <div class="card panel">
+      <div class="sub-h" style="margin:0">Profile</div>
+      <div class="field"><span class="label">Name</span><div>${esc(me.name)} <span class="small muted">· set by your admin</span></div></div>
+      <div class="field">
+        <label for="s-tz">Time zone</label>
+        <select class="input" id="s-tz" name="timezone">${TZS.map((t) => `<option ${t === me.timezone ? "selected" : ""}>${t}</option>`).join("")}</select>
+        <span class="hint">Used for quiet hours. Each reminder keeps its own time zone.</span>
+      </div>
+      <code class="api">GET /v0/me</code>
+    </div>
+
+    <div class="card panel">
+      <div class="sub-h" style="margin:0">Quiet hours</div>
+      <label class="switch" style="color:var(--text);font-size:15px"><input type="checkbox" name="quietOn" ${q ? "checked" : ""}> Hold nags overnight</label>
+      <div class="two" ${q ? "" : "hidden"} id="q-fields">
+        <div class="field"><label for="s-qs">From</label><input class="input" type="time" id="s-qs" name="start" value="${q?.start ?? "22:00"}"></div>
+        <div class="field"><label for="s-qe">Until</label><input class="input" type="time" id="s-qe" name="end" value="${q?.end ?? "07:00"}"></div>
+      </div>
+      <div ${q ? "" : "hidden"} id="q-ribbon"></div>
+      <span class="hint muted small">Nags that fall due in this window wait until it ends, and your reminders don't escalate overnight.</span>
+    </div>
+
+    <div class="card panel">
+      <div class="sub-h" style="margin:0">Connection</div>
+      <div class="field">
+        <label for="s-key">API key</label>
+        <div class="keybox"><input class="input" id="s-key" type="password" value="nt5k_abcdefghij234567_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" readonly><button type="button" class="btn" id="s-signout">Sign out</button></div>
+        <span class="hint">Your admin issues keys. This browser keeps it; the server only stores a hash.</span>
+      </div>
+      <div class="field">
+        <span class="label">Notifications</span>
+        <span class="small">Subscribe to your private ntfy topic in the ntfy app to get nags on your phone. Ask your admin for the topic name. Keep it secret.</span>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:8px;align-items:center;flex-wrap:wrap">
+      <code class="api">PATCH /v0/me { timezone, quietHours }</code>
+      <button class="btn primary" type="submit">Save changes</button>
+    </div>
+  </form>`;
+}
+function ribbon(start, end) {
+  const s = toMin(start) / 14.4, e = toMin(end) / 14.4, n = (NOW.getHours() * 60 + NOW.getMinutes()) / 14.4;
+  const spans = s <= e ? [[s, e]] : [[s, 100], [0, e]];
+  return `<div class="day-ribbon" role="img" aria-label="Quiet from ${start} to ${end}">${spans.map(([a, b]) => `<span class="q" style="left:${a}%;width:${b - a}%"></span>`).join("")}<span class="nowline" style="left:${n}%" title="Now"></span></div>
+    <div class="ribbon-scale"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>`;
+}
+function bindSettings() {
+  const f = document.getElementById("settings");
+  const upd = () => {
+    const on = f.quietOn.checked;
+    document.getElementById("q-fields").hidden = !on;
+    const r = document.getElementById("q-ribbon"); r.hidden = !on;
+    if (on) r.innerHTML = ribbon(f.start.value || "22:00", f.end.value || "07:00");
+  };
+  upd(); f.addEventListener("input", upd);
+  document.getElementById("s-signout").addEventListener("click", () => toast("Key removed from this browser (not really: mockup)", ""));
+  f.addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    me.timezone = f.timezone.value;
+    me.quietHours = f.quietOn.checked ? { start: f.start.value, end: f.end.value } : null;
+    toast("Settings saved", "200 PATCH /v0/me");
+    renderNav();
+  });
+}
+
+/* ================= Actions ================= */
+function ack(occId) {
+  const o = occurrences.find((x) => x.id === occId);
+  if (o?.state !== "NAGGING") { toast("Already closed", "200 · outcome: already_closed"); return; }
+  o.state = "ACKED"; o.closedAt = iso(NOW); o.nextNagAt = null;
+  if (!o.events) o.events = [];
+  o.events.push(ev("ACKED", iso(NOW)));
+  const r = remById(o.reminderId);
+  if (!r.rrule) r.status = "COMPLETED";
+  toast(`“${r.title}” done. Nagging stopped.`, `200 POST /v0/occurrences/${o.id}/ack · outcome: acked`);
+  render(); if (state.sheet) renderSheet();
+}
+function del(id) {
+  const r = remById(id);
+  if (!confirm(`Delete “${r.title}”? Any open occurrence is cancelled.`)) return;
+  reminders = reminders.filter((x) => x.id !== id);
+  occurrences.filter((o) => o.reminderId === id && o.state === "NAGGING").forEach((o) => { o.state = "CANCELLED"; o.closedAt = iso(NOW); });
+  closeSheet(); render();
+  toast("Reminder deleted", `204 DELETE /v0/reminders/${id}`);
+}
+let toastTimer;
+function toast(msg, api) {
+  const t = document.getElementById("toast");
+  t.innerHTML = `<span>${esc(msg)}</span>${api ? `<code>${esc(api)}</code>` : ""}`;
+  t.classList.add("show"); clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 3200);
+}
+
+document.addEventListener("click", (e) => {
+  const a = e.target.closest("[data-ack],[data-open],[data-close],[data-occ],[data-delete],[data-daygroup],[data-addgroup],[data-addgroup-cancel],[data-newin]");
+  if (!a) return;
+  if (a.dataset.ack) ack(a.dataset.ack);
+  else if (a.dataset.open) openSheet(a.dataset.open);
+  else if ("close" in a.dataset) closeSheet();
+  else if (a.dataset.occ) { const id = a.dataset.occ; state.openOcc.has(id) ? state.openOcc.delete(id) : state.openOcc.add(id); renderSheet(); document.querySelector(`[data-occ="${id}"]`)?.focus(); }
+  else if (a.dataset.delete) del(a.dataset.delete);
+  else if (a.dataset.daygroup) { state.dayGroup = a.dataset.daygroup; render(); document.querySelector(`[data-daygroup="${a.dataset.daygroup}"]`)?.focus(); }
+  else if ("addgroup" in a.dataset) { state.addingGroup = true; state.groupErr = ""; render(); }
+  else if ("addgroupCancel" in a.dataset) { state.addingGroup = false; state.groupErr = ""; render(); }
+  else if ("newin" in a.dataset) { state.draft = null; state.newIn = a.dataset.newin; }
+});
+document.getElementById("scrim").addEventListener("click", closeSheet);
+document.addEventListener("change", (e) => {
+  if (e.target.id !== "sheet-group") return;
+  const r = remById(state.sheet);
+  r.groupId = e.target.value || null;
+  toast(`Moved to ${groupName(r.groupId || "none")}`, `200 PATCH /v0/reminders/${r.id} { groupId } · proposed`);
+  render();
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && state.sheet) closeSheet(); });
+window.addEventListener("hashchange", () => { closeSheet(); render(); window.scrollTo(0, 0); });
+
+const apiToggle = document.getElementById("api-toggle");
+try { apiToggle.checked = localStorage.getItem("nt5k-mock-api") === "1"; } catch {}
+document.body.classList.toggle("show-api", apiToggle.checked);
+apiToggle.addEventListener("change", () => {
+  document.body.classList.toggle("show-api", apiToggle.checked);
+  try { localStorage.setItem("nt5k-mock-api", apiToggle.checked ? "1" : "0"); } catch {}
+});
+document.getElementById("theme-btn").addEventListener("click", () => {
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  root.dataset.theme = dark ? "light" : "dark";
+});
+
+render();
+</script>
+</body>
+</html>
