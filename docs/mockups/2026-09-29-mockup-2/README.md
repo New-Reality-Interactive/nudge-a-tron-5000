@@ -11,6 +11,9 @@ Open [`index.html`](index.html) in a browser. It's still a single file with no d
 Unlike mockup 1, this one has no **API labels** switch. It shows only what a person using the
 app would see. Mockup 1's README lists the API calls behind each view.
 
+[`brief-prompt.md`](brief-prompt.md) is a prompt for a new session to write a product brief from
+this mockup, with the release plan and product decisions already made.
+
 ## What changed
 
 ### Seeing it
