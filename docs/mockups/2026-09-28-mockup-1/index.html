@@ -1487,7 +1487,7 @@ function viewSettings() {
 function ribbon(start, end) {
   const s = toMin(start) / 14.4, e = toMin(end) / 14.4, n = (NOW.getHours() * 60 + NOW.getMinutes()) / 14.4;
   const spans = s <= e ? [[s, e]] : [[s, 100], [0, e]];
-  return `<div class="day-ribbon" role="img" aria-label="Quiet from ${start} to ${end}">${spans.map(([a, b]) => `<span class="q" style="left:${a}%;width:${b - a}%"></span>`).join("")}<span class="nowline" style="left:${n}%" title="Now"></span></div>
+  return `<div class="day-ribbon" role="img" aria-label="Quiet from ${esc(start)} to ${esc(end)}">${spans.map(([a, b]) => `<span class="q" style="left:${a}%;width:${b - a}%"></span>`).join("")}<span class="nowline" style="left:${n}%" title="Now"></span></div>
     <div class="ribbon-scale"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>`;
 }
 function bindSettings() {
